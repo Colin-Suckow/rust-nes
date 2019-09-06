@@ -1,5 +1,5 @@
-mod memory;
 mod cartridge;
+mod memory;
 
 use memory::AddressSpace;
 
