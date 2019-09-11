@@ -1,9 +1,35 @@
+extern crate clap;
+use clap::{Arg, App, SubCommand};
+
 mod cartridge;
 mod memory;
 
 use memory::AddressSpace;
 
 fn main() {
+
+    let matches = App::new("rust-nes")
+                    .version("1.0")
+                    .author("Colin Suckow")
+                    .about("A Nintendo emulator written in rust. My first rust project")
+                    .arg(Arg::with_name("exec")
+                            .short("e")
+                            .long("execute")
+                            .value_name("FILE")
+                            .help("ROM file to load")
+                            .takes_value(true))
+                    .get_matches();
+
+    let romPath = match matches.value_of("exec") {
+        Some(val) => val,
+        None => {
+            println!("ERROR: No file provided");
+            return;
+        }
+    };
+
+    println!("Recived argument {}", romPath);
+
     println!("Hello, world!");
     let mut memory_map = memory::MemMap::new();
 
