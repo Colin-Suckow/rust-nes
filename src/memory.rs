@@ -1,3 +1,6 @@
+
+use crate::cartridge;
+
 pub trait AddressSpace {
   fn peek(&self, ptr: u16) -> Option<u8>;
   fn poke(&mut self, ptr: u16, byte: u8);
@@ -15,6 +18,8 @@ impl Ram {
     }
   }
 }
+
+
 
 impl AddressSpace for Ram {
   fn peek(&self, ptr: u16) -> Option<u8> {

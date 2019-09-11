@@ -1,17 +1,18 @@
+use crate::memory;
 use std::fs;
-use std::io::prelude::*;
 
-enum MirrorMode {
+#[derive(Debug)]
+pub enum MirrorMode {
   Vertical,
   Horizontal,
 }
 
 pub struct Cartridge {
-  trainer_present: bool,
-  prg_rom_data: Vec<u8>,
-  chr_rom_data: Vec<u8>,
-  mirror_mode: MirrorMode,
-  mapper: u32,
+  pub trainer_present: bool,
+  pub prg_rom_data: Vec<u8>,
+  pub chr_rom_data: Vec<u8>,
+  pub mirror_mode: MirrorMode,
+  pub mapper: u32,
 }
 
 impl Cartridge {
@@ -20,28 +21,57 @@ impl Cartridge {
     let header = &data[..16];
 
     let valid_ines = header[..4] == [0x4E, 0x45, 0x53, 0x1A];
-
-    println!("Valid iNes file: {}", valid_ines);
-
+    if (!valid_ines) {
+      panic!("File is not a valid nes rom!");
+    }
     // false = horizontal, true = vertical mirror
-    let char_mirror = mapMirrorMode(header[6] & 0b00000001);
+    let char_mirror = mapMirrorMode(header[6] & 0b00000001).expect("Unsupported mirror mode!");
     let trainer_present = (header[6] & 0b00000100) >> 2 == 1;
     let mapper = (header[7] & 0b11110000) + ((header[6] & 0b11110000) >> 4);
     let mut char_mirror_text = String::new();
-    
-    println!("Trainer present: {}", trainer_present);
-    println!("Mapper: {}", mapper);
-    println!("Character mirror mode: {}", char_mirror_text);
-    println!("Size of PRG ROM: {} x 16k = {}k", header[4], header[4] * 16);
-    println!("Size of CHR ROM: {} x 8192 = {} bytes", header[5], header[5] as usize * 8192);
+
+    let prg_start = 16 as usize;
+    let prg_end = prg_start + (header[4] as usize * 16384);
+    let chr_start = prg_end as usize + 1;
+    let chr_end = chr_start + (header[5] as usize * 8192) as usize;
+
+    Cartridge {
+      trainer_present: trainer_present,
+      prg_rom_data: data[prg_start..prg_end].to_vec(),
+      chr_rom_data: data[chr_start..chr_end].to_vec(),
+      mirror_mode: char_mirror,
+      mapper: mapper as u32,
+    }
+  }
+
+  pub fn printStats(&self) {
+    println!("Mapper: {}", self.mapper);
+    println!("Character Mirroring: {:?}", self.mirror_mode);
+    println!("Program ROM size: {} bytes", self.prg_rom_data.len());
+    println!("Character ROM size: {} bytes", self.chr_rom_data.len());
   }
 }
 
-fn decodeHeader(header: &[u8]) {
-  
+impl memory::AddressSpace for Cartridge {
+  fn peek(&self, ptr: u16) -> Option<u8> {
+    if ptr > self.prg_rom_data.len() as u16 {
+      Some(self.prg_rom_data[ptr as usize])
+    } else {
+      Some(self.chr_rom_data[ptr as usize])
+    }
+  }
 
+  fn poke(&mut self, ptr: u16, byte: u8) {
+    if ptr > self.prg_rom_data.len() as u16 {
+      self.prg_rom_data[ptr as usize] = byte;
+    } else {
+      self.chr_rom_data[ptr as usize] = byte;
+    }
+  }
 
-
+  fn size(&self) -> usize {
+    self.prg_rom_data.len() + self.chr_rom_data.len()
+  }
 }
 
 pub fn print_ines_header(path: &str) {
@@ -54,6 +84,6 @@ fn mapMirrorMode(mode_num: u8) -> Option<MirrorMode> {
   let mode = match mode_num {
     0 => return Some(MirrorMode::Horizontal),
     1 => return Some(MirrorMode::Vertical),
-    _ => return None
+    _ => return None,
   };
 }
