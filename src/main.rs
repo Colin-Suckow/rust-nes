@@ -20,7 +20,7 @@ fn main() {
                             .takes_value(true))
                     .get_matches();
 
-    let romPath = match matches.value_of("exec") {
+    let rom_path = match matches.value_of("exec") {
         Some(val) => val,
         None => {
             println!("ERROR: No file provided");
@@ -28,7 +28,7 @@ fn main() {
         }
     };
 
-    println!("Recived argument {}", romPath);
+    println!("Recived argument {}", rom_path);
 
     println!("Hello, world!");
     let mut memory_map = memory::MemMap::new();
@@ -47,5 +47,5 @@ fn main() {
         memory_map.peek(0),
         memory_map.peek(103)
     );
-    cartridge::print_ines_header("BOMBMAN.NES");
+    cartridge::Cartridge::load(rom_path);
 }
