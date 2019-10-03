@@ -1,10 +1,8 @@
 extern crate clap;
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 
 mod cartridge;
 mod memory;
-
-use memory::AddressSpace;
 
 fn main() {
     let matches = App::new("rust-nes")
