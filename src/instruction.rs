@@ -1,11 +1,11 @@
-use crate::cpu::{AddressingMode, Instruction};
+use crate::cpu::{AddressingMode, AddressingMode::*, Instruction, Instruction::*};
 
 #[allow(dead_code)]
 pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x00
-    Some((Instruction::BRK, AddressingMode::Implied)),
+    Some((BRK, Implied)),
     //0x01
-    Some((Instruction::ORA, AddressingMode::Indirect)),
+    Some((ORA, Indirect)),
     //0x02
     None,
     //0x03
@@ -13,31 +13,31 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x04
     None,
     //0x05
-    Some((Instruction::ORA, AddressingMode::ZeroPage)),
+    Some((ORA, ZeroPage)),
     //0x06
-    Some((Instruction::ASL, AddressingMode::ZeroPage)),
+    Some((ASL, ZeroPage)),
     //0x07
     None,
     //0x08
-    Some((Instruction::PHP, AddressingMode::Implied)),
+    Some((PHP, Implied)),
     //0x09
-    Some((Instruction::ORA, AddressingMode::Immediate)),
+    Some((ORA, Immediate)),
     //0x0a
-    Some((Instruction::ASL, AddressingMode::Accumulator)),
+    Some((ASL, Accumulator)),
     //0x0b
     None,
     //0x0c
     None,
     //0x0d
-    Some((Instruction::ORA, AddressingMode::Absolute)),
+    Some((ORA, Absolute)),
     //0x0e
-    Some((Instruction::ASL, AddressingMode::Absolute)),
+    Some((ASL, Absolute)),
     //0x0f
     None,
     //0x10
-    Some((Instruction::BPL, AddressingMode::Relative)),
+    Some((BPL, Relative)),
     //0x11
-    Some((Instruction::ORA, AddressingMode::IndirectY)),
+    Some((ORA, IndirectY)),
     //0x12
     None,
     //0x13
