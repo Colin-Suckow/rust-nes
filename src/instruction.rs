@@ -31,13 +31,13 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x0d
     Some((Instruction::ORA, AddressingMode::Absolute)),
     //0x0e
-    None,
+    Some((Instruction::ASL, AddressingMode::Absolute)),
     //0x0f
     None,
     //0x10
-    None,
+    Some((Instruction::BPL, AddressingMode::Relative)),
     //0x11
-    None,
+    Some((Instruction::ORA, AddressingMode::IndirectY)),
     //0x12
     None,
     //0x13
