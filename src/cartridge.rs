@@ -31,8 +31,8 @@ impl Cartridge {
     let mut char_mirror_text = String::new();
 
     let prg_start = 16 as usize;
-    let prg_end = prg_start + (header[4] as usize * 16384);
-    let chr_start = prg_end as usize + 1;
+    let prg_end = prg_start + (header[4] as usize * 16384) - 1;
+    let chr_start = prg_end as usize;
     let chr_end = chr_start + (header[5] as usize * 8192) as usize;
 
     Cartridge {

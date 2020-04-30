@@ -3,6 +3,9 @@ use clap::{App, Arg};
 
 mod cartridge;
 mod memory;
+mod cpu;
+mod operations;
+mod instruction;
 
 fn main() {
     let matches = App::new("rust-nes")
