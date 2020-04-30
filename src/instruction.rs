@@ -3,9 +3,9 @@ use crate::cpu::{AddressingMode, AddressingMode::*, Instruction, Instruction::*}
 #[allow(dead_code)]
 pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x00
-    Some((BRK, Implied)),
+    oc(BRK, Implied),
     //0x01
-    Some((ORA, Indirect)),
+    oc(ORA, Indirect),
     //0x02
     None,
     //0x03
@@ -13,31 +13,31 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x04
     None,
     //0x05
-    Some((ORA, ZeroPage)),
+    oc(ORA, ZeroPage),
     //0x06
-    Some((ASL, ZeroPage)),
+    oc(ASL, ZeroPage),
     //0x07
     None,
     //0x08
-    Some((PHP, Implied)),
+    oc(PHP, Implied),
     //0x09
-    Some((ORA, Immediate)),
+    oc(ORA, Immediate),
     //0x0a
-    Some((ASL, Accumulator)),
+    oc(ASL, Accumulator),
     //0x0b
     None,
     //0x0c
     None,
     //0x0d
-    Some((ORA, Absolute)),
+    oc(ORA, Absolute),
     //0x0e
-    Some((ASL, Absolute)),
+    oc(ASL, Absolute),
     //0x0f
     None,
     //0x10
-    Some((BPL, Relative)),
+    oc(BPL, Relative),
     //0x11
-    Some((ORA, IndirectY)),
+    oc(ORA, IndirectY),
     //0x12
     None,
     //0x13
@@ -516,3 +516,7 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     None,
 ];
 
+//Helper function to make opcode declarations easier
+const fn oc(instruction: Instruction, addressing_mode: AddressingMode) -> Option<(Instruction, AddressingMode)> {
+    Some((instruction, addressing_mode))
+}
