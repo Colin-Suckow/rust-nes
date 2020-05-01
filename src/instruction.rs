@@ -45,15 +45,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x14
     None,
     //0x15
-    None,
+    oc(ORA, ZeroPageX),
     //0x16
-    None,
+    oc(ASL, ZeroPageX),
     //0x17
     None,
     //0x18
-    None,
+    oc(CLC, Implied),
     //0x19
-    None,
+    oc(ORA, AbsoluteY),
     //0x1a
     None,
     //0x1b
@@ -61,41 +61,41 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x1c
     None,
     //0x1d
-    None,
+    oc(ORA, AbsoluteX),
     //0x1e
-    None,
+    oc(ASL, AbsoluteX),
     //0x1f
     None,
     //0x20
-    None,
+    oc(JSR, Absolute),
     //0x21
-    None,
+    oc(AND, IndirectX),
     //0x22
     None,
     //0x23
     None,
     //0x24
-    None,
+    oc(BIT, ZeroPage),
     //0x25
-    None,
+    oc(AND, ZeroPage),
     //0x26
-    None,
+    oc(ROL, ZeroPage),
     //0x27
     None,
     //0x28
-    None,
+    oc(PLP, Implied),
     //0x29
-    None,
+    oc(AND, Immediate),
     //0x2a
-    None,
+    oc(ROL, Accumulator),
     //0x2b
     None,
     //0x2c
-    None,
+    oc(BIT, Absolute),
     //0x2d
-    None,
+    oc(AND, Absolute),
     //0x2e
-    None,
+    oc(ROL, Absolute),
     //0x2f
     None,
     //0x30
