@@ -99,9 +99,9 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x2f
     None,
     //0x30
-    None,
+    oc(BMI, Relative),
     //0x31
-    None,
+    oc(AND, IndirectX),
     //0x32
     None,
     //0x33
@@ -109,15 +109,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x34
     None,
     //0x35
-    None,
+    oc(AND, ZeroPageX),
     //0x36
-    None,
+    oc(ROL, ZeroPageX),
     //0x37
     None,
     //0x38
-    None,
+    oc(SEC, Implied),
     //0x39
-    None,
+    oc(AND, AbsoluteY),
     //0x3a
     None,
     //0x3b
@@ -125,15 +125,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x3c
     None,
     //0x3d
-    None,
+    oc(AND, AbsoluteX),
     //0x3e
-    None,
+    oc(ROL, AbsoluteX),
     //0x3f
     None,
     //0x40
-    None,
+    oc(RTI, Implied),
     //0x41
-    None,
+    oc(EOR, IndirectX),
     //0x42
     None,
     //0x43
@@ -141,31 +141,31 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x44
     None,
     //0x45
-    None,
+    oc(EOR, ZeroPage),
     //0x46
-    None,
+    oc(LSR, ZeroPage),
     //0x47
     None,
     //0x48
-    None,
+    oc(PHA, Implied),
     //0x49
-    None,
+    oc(EOR, Immediate),
     //0x4a
-    None,
+    oc(LSR, Accumulator),
     //0x4b
     None,
     //0x4c
-    None,
+    oc(JMP, Absolute),
     //0x4d
-    None,
+    oc(EOR, Absolute),
     //0x4e
-    None,
+    oc(LSR, Absolute),
     //0x4f
     None,
     //0x50
-    None,
+    oc(BVC, Relative),
     //0x51
-    None,
+    oc(EOR, IndirectY),
     //0x52
     None,
     //0x53
@@ -173,15 +173,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x54
     None,
     //0x55
-    None,
+    oc(EOR, ZeroPageX),
     //0x56
-    None,
+    oc(LSR, ZeroPageX),
     //0x57
     None,
     //0x58
-    None,
+    oc(CLI, Implied),
     //0x59
-    None,
+    oc(EOR, AbsoluteY),
     //0x5a
     None,
     //0x5b
@@ -189,15 +189,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x5c
     None,
     //0x5d
-    None,
+    oc(EOR, AbsoluteX),
     //0x5e
-    None,
+    oc(LSR, AbsoluteX),
     //0x5f
     None,
     //0x60
-    None,
+    oc(RTS, Implied),
     //0x61
-    None,
+    oc(ADC, IndirectX),
     //0x62
     None,
     //0x63
@@ -205,31 +205,31 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x64
     None,
     //0x65
-    None,
+    oc(ADC, ZeroPage),
     //0x66
-    None,
+    oc(ROR, ZeroPage),
     //0x67
     None,
     //0x68
-    None,
+    oc(PLA, Implied),
     //0x69
-    None,
+    oc(ADC, Immediate),
     //0x6a
-    None,
+    oc(ROR, Accumulator),
     //0x6b
     None,
     //0x6c
-    None,
+    oc(JMP, Indirect),
     //0x6d
-    None,
+    oc(ADC, Absolute),
     //0x6e
-    None,
+    oc(ROR, Absolute),
     //0x6f
     None,
     //0x70
-    None,
+    oc(BVS, Relative),
     //0x71
-    None,
+    oc(ADC, IndirectY),
     //0x72
     None,
     //0x73
@@ -237,15 +237,15 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x74
     None,
     //0x75
-    None,
+    oc(ADC, ZeroPageX),
     //0x76
-    None,
+    oc(ROR, ZeroPageX),
     //0x77
     None,
     //0x78
-    None,
+    oc(SEI, Implied),
     //0x79
-    None,
+    oc(ADC, AbsoluteY),
     //0x7a
     None,
     //0x7b
@@ -253,9 +253,9 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
     //0x7c
     None,
     //0x7d
-    None,
+    oc(ADC, AbsoluteX),
     //0x7e
-    None,
+    oc(ROR, AbsoluteX),
     //0x7f
     None,
     //0x80
