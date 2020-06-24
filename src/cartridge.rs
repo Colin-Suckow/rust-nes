@@ -68,10 +68,6 @@ impl memory::AddressSpace for Cartridge {
       self.chr_rom_data[ptr as usize] = byte;
     }
   }
-
-  fn size(&self) -> usize {
-    self.prg_rom_data.len() + self.chr_rom_data.len()
-  }
 }
 
 pub fn print_ines_header(path: &str) {

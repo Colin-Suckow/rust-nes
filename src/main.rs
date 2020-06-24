@@ -32,18 +32,13 @@ fn main() {
 
     println!("Recived argument {}", rom_path);
 
-    let mut memory_map = memory::MemMap::new();
-
-    //RAM
-    memory_map.add_mappable_mem(memory::MappableMem::new(
-        Box::new(memory::Ram::new(2048)),
-        0,
-    ));
-
     let rom = cartridge::Cartridge::load(rom_path);
 
     rom.printStats();
 
-    //Cartridge
-    memory_map.add_mappable_mem(memory::MappableMem::new(Box::new(rom), 0x4020));
+    let bus = memory::Bus {
+        ram: memory::Ram::new(),
+        cartridge: rom,
+    };
+
 }
