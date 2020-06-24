@@ -2,10 +2,10 @@ extern crate clap;
 use clap::{App, Arg};
 
 mod cartridge;
-mod memory;
 mod cpu;
-mod operations;
 mod instruction;
+mod memory;
+mod operations;
 
 fn main() {
     let matches = App::new("rust-nes")
@@ -40,5 +40,4 @@ fn main() {
         ram: memory::Ram::new(),
         cartridge: rom,
     };
-
 }

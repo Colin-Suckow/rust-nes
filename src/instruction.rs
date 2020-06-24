@@ -517,6 +517,9 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
 ];
 
 //Helper function to make opcode declarations easier
-const fn oc(instruction: Instruction, addressing_mode: AddressingMode) -> Option<(Instruction, AddressingMode)> {
+const fn oc(
+    instruction: Instruction,
+    addressing_mode: AddressingMode,
+) -> Option<(Instruction, AddressingMode)> {
     Some((instruction, addressing_mode))
 }
