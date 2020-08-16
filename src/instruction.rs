@@ -1,5 +1,7 @@
 use crate::instruction::AddressingMode::*;
 use crate::instruction::Instruction::*;
+
+#[derive(Debug, Clone, Copy)]
 pub enum AddressingMode {
     Accumulator,
     Absolute,
@@ -16,6 +18,7 @@ pub enum AddressingMode {
     ZeroPageY,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Instruction {
     ADC,
     AND,
@@ -75,9 +78,11 @@ pub enum Instruction {
     TYA,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Operation {
-    instruction: Instruction,
-    addressing_mode: AddressingMode,
+    pub instruction: Instruction,
+    pub addressing_mode: AddressingMode,
+    pub base_cycle_count: u8,
 }
 
 
@@ -602,8 +607,20 @@ const fn oc(
     instruction: Instruction,
     addressing_mode: AddressingMode,
 ) -> Option<Operation> {
+
+    let base_cycle_count = match addressing_mode {
+        ZeroPageX => 4,
+        ZeroPageY => 4,
+        AbsoluteX => 4,
+        AbsoluteY => 4,
+        IndirectX => 6,
+        IndirectY => 5,
+        _ => 2,
+    };
+
     Some(Operation {
         instruction,
         addressing_mode,
+        base_cycle_count
     })
 }

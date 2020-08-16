@@ -1,3 +1,6 @@
+#![feature(const_if_match)]
+
+
 extern crate clap;
 use clap::{App, Arg};
 
