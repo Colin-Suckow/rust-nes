@@ -1,5 +1,8 @@
+use crate::instruction::Operation;
+use crate::memory::Bus;
 //http://nesdev.com/6502_cpu.txt
 pub struct Cpu {
+    bus: Bus,
     //Registers
     PC: u16, //Program counter
     S: u8,   //Stack pointer
@@ -7,79 +10,26 @@ pub struct Cpu {
     A: u8,   //Accumulator
     X: u8,   //Index X
     Y: u8,   //Index Y
+    current_instruction: Option<Operation>,
+    instruction_progress: u8,
 }
 
-pub enum AddressingMode {
-    Accumulator,
-    Absolute,
-    AbsoluteX,
-    AbsoluteY,
-    Immediate,
-    Implied,
-    Indirect,
-    IndirectX,
-    IndirectY,
-    Relative,
-    ZeroPage,
-    ZeroPageX,
-    ZeroPageY,
-}
+impl Cpu {
+    pub fn new(bus: Bus) -> Cpu {
+        Cpu {
+            bus: bus,
+            PC: 0,
+            S: 0,
+            P: 0,
+            A: 0,
+            X: 0,
+            Y: 0,
+            current_instruction: None,
+            instruction_progress: 0,
+        }
+    }
 
-pub enum Instruction {
-    ADC,
-    AND,
-    ASL,
-    BCC,
-    BCS,
-    BEQ,
-    BIT,
-    BMI,
-    BNE,
-    BPL,
-    BRK,
-    BVC,
-    BVS,
-    CLC,
-    CLD,
-    CLI,
-    CLV,
-    CMP,
-    CPX,
-    CPY,
-    DEC,
-    DEX,
-    DEY,
-    EOR,
-    INC,
-    INX,
-    INY,
-    JMP,
-    JSR,
-    LDA,
-    LDX,
-    LDY,
-    LSR,
-    NOP,
-    ORA,
-    PHA,
-    PHP,
-    PLA,
-    PLP,
-    ROL,
-    ROR,
-    RTI,
-    RTS,
-    SBC,
-    SEC,
-    SED,
-    SEI,
-    STA,
-    STX,
-    STY,
-    TAX,
-    TAY,
-    TSX,
-    TXA,
-    TXS,
-    TYA,
+    pub fn step_cycle(&mut self) {
+        todo!();
+    }
 }

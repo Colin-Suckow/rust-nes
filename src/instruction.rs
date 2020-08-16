@@ -1,7 +1,88 @@
-use crate::cpu::{AddressingMode, AddressingMode::*, Instruction, Instruction::*};
+use crate::instruction::AddressingMode::*;
+use crate::instruction::Instruction::*;
+pub enum AddressingMode {
+    Accumulator,
+    Absolute,
+    AbsoluteX,
+    AbsoluteY,
+    Immediate,
+    Implied,
+    Indirect,
+    IndirectX,
+    IndirectY,
+    Relative,
+    ZeroPage,
+    ZeroPageX,
+    ZeroPageY,
+}
+
+pub enum Instruction {
+    ADC,
+    AND,
+    ASL,
+    BCC,
+    BCS,
+    BEQ,
+    BIT,
+    BMI,
+    BNE,
+    BPL,
+    BRK,
+    BVC,
+    BVS,
+    CLC,
+    CLD,
+    CLI,
+    CLV,
+    CMP,
+    CPX,
+    CPY,
+    DEC,
+    DEX,
+    DEY,
+    EOR,
+    INC,
+    INX,
+    INY,
+    JMP,
+    JSR,
+    LDA,
+    LDX,
+    LDY,
+    LSR,
+    NOP,
+    ORA,
+    PHA,
+    PHP,
+    PLA,
+    PLP,
+    ROL,
+    ROR,
+    RTI,
+    RTS,
+    SBC,
+    SEC,
+    SED,
+    SEI,
+    STA,
+    STX,
+    STY,
+    TAX,
+    TAY,
+    TSX,
+    TXA,
+    TXS,
+    TYA,
+}
+
+pub struct Operation {
+    instruction: Instruction,
+    addressing_mode: AddressingMode,
+}
+
 
 #[allow(dead_code)]
-pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
+pub static OPCODES: [Option<Operation>; 256] = [
     //0x00
     oc(BRK, Implied),
     //0x01
@@ -520,6 +601,9 @@ pub static OPCODES: [Option<(Instruction, AddressingMode)>; 256] = [
 const fn oc(
     instruction: Instruction,
     addressing_mode: AddressingMode,
-) -> Option<(Instruction, AddressingMode)> {
-    Some((instruction, addressing_mode))
+) -> Option<Operation> {
+    Some(Operation {
+        instruction,
+        addressing_mode,
+    })
 }
