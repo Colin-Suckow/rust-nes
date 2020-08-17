@@ -78,11 +78,12 @@ pub enum Instruction {
     TYA,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Operation {
     pub instruction: Instruction,
     pub addressing_mode: AddressingMode,
     pub base_cycle_count: u8,
+    pub data: Option<Vec<u8>>,
 }
 
 
@@ -618,9 +619,11 @@ const fn oc(
         _ => 2,
     };
 
+
     Some(Operation {
         instruction,
         addressing_mode,
-        base_cycle_count
+        base_cycle_count,
+        data: None,
     })
 }

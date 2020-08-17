@@ -1,4 +1,4 @@
-use crate::instruction::{Operation, Instruction, AddressingMode};
+use crate::instruction::{AddressingMode, Instruction, Operation};
 use crate::memory::Bus;
 //http://nesdev.com/6502_cpu.txt
 pub struct Cpu {
@@ -10,7 +10,6 @@ pub struct Cpu {
     A: u8,   //Accumulator
     X: u8,   //Index X
     Y: u8,   //Index Y
-    current_operation: Option<Operation>,
     operation_progress: u8,
 }
 
@@ -24,27 +23,23 @@ impl Cpu {
             A: 0,
             X: 0,
             Y: 0,
-            current_operation: None,
             operation_progress: 0,
         }
     }
 
     pub fn step_cycle(&mut self) {
-
-        if self.current_operation.is_some() && self.operation_progress < self.current_operation.unwrap().base_cycle_count {
-            self.operation_progress += 1;
+        //skip cycle if instruction is still in progress
+        if self.operation_progress > 0 {
+            self.operation_progress -= 1;
             return;
-        } else {
-            self.current_operation = self.consume_next_operation();
-            self.operation_progress = 0;
         }
-
-        let operation = self.current_operation.unwrap();
-
-        
     }
 
-    pub fn consume_next_operation(&mut self) -> Option<Operation> {
+    fn consume_next_operation(&mut self) -> Option<Operation> {
         todo!();
     }
+}
+
+fn parse_instruction_bytes(data: &Vec<u8>) -> Operation {
+    todo!();
 }
