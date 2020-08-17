@@ -8,7 +8,6 @@ mod cartridge;
 mod cpu;
 mod instruction;
 mod memory;
-mod operations;
 
 fn main() {
     let matches = App::new("rust-nes")
