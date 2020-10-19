@@ -9,6 +9,9 @@ mod cpu;
 mod instruction;
 mod memory;
 
+use cpu::Cpu;
+use memory::AddressSpace;
+
 fn main() {
     let matches = App::new("rust-nes")
         .version("1.0")
@@ -38,8 +41,12 @@ fn main() {
 
     rom.printStats();
 
-    let bus = memory::Bus {
+    let mut bus = memory::Bus {
         ram: memory::Ram::new(),
         cartridge: rom,
     };
+
+    let mut cpu = Cpu::new(bus);
+
+    cpu.step_cycle();
 }

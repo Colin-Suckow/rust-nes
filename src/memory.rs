@@ -63,3 +63,27 @@ impl AddressSpace for Bus {
         }
     }
 }
+
+
+//Returns the value given as address % 255
+pub struct TestBus;
+
+impl AddressSpace for TestBus {
+    fn peek(&self, ptr: u16) -> Option<u8> {
+        Some((ptr % 255) as u8)
+    }
+
+    fn poke(&mut self, ptr: u16, byte: u8) {
+        ()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_testbus() {
+        let bus = TestBus;
+        assert_eq!(bus.peek(256).unwrap(), 1 as u8);
+    }
+}

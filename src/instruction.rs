@@ -1,7 +1,7 @@
 use crate::instruction::AddressingMode::*;
 use crate::instruction::Instruction::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AddressingMode {
     Accumulator,
     Absolute,
@@ -14,8 +14,15 @@ pub enum AddressingMode {
     IndirectY,
     Relative,
     ZeroPage,
-    ZeroPageX,
-    ZeroPageY,
+    ZeroPageX, //Also known as Indexed Indirect
+    ZeroPageY, //Also known as Indirect Indexed
+}
+
+pub enum Operand {
+    Number {value: u8},
+    Address { location: u16},
+    Accumulator,
+    Implied,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -85,6 +92,7 @@ pub struct Operation {
     pub base_cycle_count: u8,
     pub data: Option<Vec<u8>>,
 }
+
 
 
 #[allow(dead_code)]
