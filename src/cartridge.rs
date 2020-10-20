@@ -53,19 +53,23 @@ impl Cartridge {
 }
 
 impl memory::AddressSpace for Cartridge {
-    fn peek(&self, ptr: u16) -> Option<u8> {
+    fn peek(&self, ptr: u16) -> u8 {
+        if ptr >= 0xC000 {
+            return self.prg_rom_data[(ptr - 0xC000) as usize]
+        };
+
         if ptr > self.prg_rom_data.len() as u16 {
-            Some(self.prg_rom_data[ptr as usize])
+            self.prg_rom_data[(ptr - 0x4020) as usize]
         } else {
-            Some(self.chr_rom_data[ptr as usize])
+            self.chr_rom_data[(ptr - 0x4020) as usize]
         }
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         if ptr > self.prg_rom_data.len() as u16 {
-            self.prg_rom_data[ptr as usize] = byte;
+            self.prg_rom_data[(ptr - 0x4020) as usize] = byte;
         } else {
-            self.chr_rom_data[ptr as usize] = byte;
+            self.chr_rom_data[(ptr - 0x4020) as usize] = byte;
         }
     }
 }

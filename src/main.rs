@@ -48,5 +48,10 @@ fn main() {
 
     let mut cpu = Cpu::new(bus);
 
-    cpu.step_cycle();
+    cpu.reset();
+
+    loop {
+        cpu.step_cycle();
+    }
+    
 }

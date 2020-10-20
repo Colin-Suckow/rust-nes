@@ -18,12 +18,7 @@ pub enum AddressingMode {
     ZeroPageY, //Also known as Indirect Indexed
 }
 
-pub enum Operand {
-    Number {value: u8},
-    Address { location: u16},
-    Accumulator,
-    Implied,
-}
+
 
 #[derive(Debug, Clone, Copy)]
 pub enum Instruction {
@@ -90,7 +85,7 @@ pub struct Operation {
     pub instruction: Instruction,
     pub addressing_mode: AddressingMode,
     pub base_cycle_count: u8,
-    pub data: Option<Vec<u8>>,
+    pub data: Vec<u8>,
 }
 
 
@@ -632,6 +627,6 @@ const fn oc(
         instruction,
         addressing_mode,
         base_cycle_count,
-        data: None,
+        data: Vec::<u8>::new(),
     })
 }

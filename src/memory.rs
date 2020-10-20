@@ -1,11 +1,11 @@
 use crate::cartridge;
 
 pub trait AddressSpace {
-    fn peek(&self, ptr: u16) -> Option<u8>;
+    fn peek(&self, ptr: u16) -> u8;
     fn poke(&mut self, ptr: u16, byte: u8);
     fn peek_16(&self, ptr: u16) -> u16 {
-        let byte1 = self.peek(ptr).unwrap();
-        let byte2 = self.peek(ptr).unwrap();
+        let byte1 = self.peek(ptr);
+        let byte2 = self.peek(ptr);
         u16::from_le_bytes([byte1, byte2])
     }
 }
@@ -23,8 +23,8 @@ impl Ram {
 }
 
 impl AddressSpace for Ram {
-    fn peek(&self, ptr: u16) -> Option<u8> {
-        Some(self.data[ptr as usize])
+    fn peek(&self, ptr: u16) -> u8 {
+        self.data[ptr as usize]
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
@@ -40,10 +40,8 @@ pub struct Bus {
 impl Bus {
     pub fn debug_print_memory(&self) {
         for address in 0..2300 {
-            match self.peek(address as u16) {
-                Some(val) => print!("{} : {}, ", address, val),
-                None => print!("{} : NULL, ", address),
-            }
+            let val = self.peek(address as u16);
+            print!("{} : {}, ", address, val);
             if address % 5 == 0 {
                 print!("\n");
             }
@@ -52,11 +50,11 @@ impl Bus {
 }
 
 impl AddressSpace for Bus {
-    fn peek(&self, ptr: u16) -> Option<u8> {
+    fn peek(&self, ptr: u16) -> u8 {
         return match ptr {
             0x0000..=0x07FF => self.ram.peek(ptr),
             0x4020..=0xFFFF => self.cartridge.peek(ptr),
-            _ => None,
+            _ => 0,
         };
     }
 
@@ -73,8 +71,8 @@ impl AddressSpace for Bus {
 pub struct TestBus;
 
 impl AddressSpace for TestBus {
-    fn peek(&self, ptr: u16) -> Option<u8> {
-        Some((ptr % 255) as u8)
+    fn peek(&self, ptr: u16) -> u8 {
+        (ptr % 255) as u8
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
@@ -114,7 +112,7 @@ mod tests {
     #[test]
     fn test_testbus() {
         let bus = TestBus;
-        assert_eq!(bus.peek(256).unwrap(), 1 as u8);
+        assert_eq!(bus.peek(256), 1 as u8);
     }
 
     #[test]
