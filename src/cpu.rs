@@ -1,5 +1,5 @@
 use crate::instruction::{AddressingMode, Instruction, Operand, Operation};
-use crate::memory::{AddressSpace, Bus, TestBus};
+use crate::memory::*;
 use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian, LittleEndian};
 
 //http://nesdev.com/6502_cpu.txt
@@ -123,67 +123,65 @@ impl<T: AddressSpace> Cpu<T> {
                     cross_page: false,
                 },
 
-                AddressingMode::Implied => MemoryRead { //TODO make None ((data[1] as i32) + self.PC as i32)
+                AddressingMode::Implied => MemoryRead { //TODO make None
                     result: 0,
                     cross_page: false,
                 }, 
                 AddressingMode::Relative => MemoryRead {
-                    result: self.bus.peek(15 as u16).unwrap(),
-                    cross_page: (data[1] / 255) as u16 == (self.PC / 255) as u16,
+                    result: self.bus.peek(relative_address(data[1], self.PC)).unwrap(),
+                    cross_page: (data[1] / 255) as u16 != (self.PC / 255) as u16,
                 },
                 AddressingMode::Absolute => MemoryRead {
-                    result: self.bus.peek(15).unwrap(),
+                    result: self.bus.peek(absolute_address(data[1], data[2])).unwrap(),
                     cross_page: false,
                 }, //Be careful of endianess here
                 AddressingMode::ZeroPage => MemoryRead {
-                    result: self.bus.peek(data. as u16).unwrap(),
+                    result: self.bus.peek(zero_page_address(data[1])).unwrap(),
                     cross_page: false,
                 },
                 AddressingMode::Indirect => MemoryRead {
                     result: self
                         .bus
-                        .peek((data[1] | (data[2] << 8)) as u16 + self.PC)
+                        .peek(u16::from_le_bytes([data[1], data[2]]) + self.PC)
                         .unwrap(),
-                    cross_page: ((data[1] | (data[2] << 8)) / 255) as u16 == (self.PC / 255) as u16,
+                    cross_page: (u16::from_le_bytes([data[1], data[2]]) / 255) as u16 != (self.PC / 255) as u16,
                 },
-
                 AddressingMode::AbsoluteX => MemoryRead {
                     result: self
                         .bus
-                        .peek((data[1] | (data[2] << 8)) as u16 + self.X as u16)
+                        .peek(u16::from_le_bytes([data[1], data[2]]) + self.X as u16)
                         .unwrap(),
-                    cross_page: ((data[1] | (data[2] << 8)) / 255) as u16 == (self.X / 255) as u16,
+                    cross_page: (u16::from_le_bytes([data[1], data[2]]) / 255) as u16 != (self.X / 255) as u16,
                 },
                 AddressingMode::AbsoluteY => MemoryRead {
                     result: self
                         .bus
-                        .peek((data[1] | (data[2] << 8)) as u16 + self.Y as u16)
+                        .peek(u16::from_le_bytes([data[1], data[2]]) + self.Y as u16)
                         .unwrap(),
-                    cross_page: ((data[1] | (data[2] << 8)) / 255) as u16 == (self.Y / 255) as u16,
+                    cross_page: (u16::from_le_bytes([data[1], data[2]]) / 255) as u16 != (self.Y / 255) as u16,
                 },
 
                 AddressingMode::ZeroPageX => MemoryRead {
                     result: self.bus.peek(data[1].wrapping_add(self.X) as u16).unwrap(),
-                    cross_page: (data[1] as u16 / 255) == (self.X / 255) as u16,
+                    cross_page: (data[1] as u16 / 255) != (self.X / 255) as u16,
                 },
                 AddressingMode::ZeroPageY => MemoryRead {
                     result: self.bus.peek(data[1].wrapping_add(self.Y) as u16).unwrap(),
-                    cross_page: (data[1] as u16 / 255) == (self.Y / 255) as u16,
+                    cross_page: (data[1] as u16 / 255) != (self.Y / 255) as u16,
                 },
 
                 AddressingMode::IndirectX => {
-                    let address = data[1].wrapping_add(self.X);
+                    let addressLocation = data[1].wrapping_add(self.X);
                     MemoryRead {
-                        result: self.bus.peek(address as u16).unwrap()
-                            | (self.bus.peek((address + 1) as u16).unwrap() << 8),
+                        result: self.bus.peek(self.bus.peek_16(addressLocation as u16)).unwrap(),
                         cross_page: false,
                     }
                 }
 
                 AddressingMode::IndirectY => {
-                    let address = data[1].wrapping_add(self.Y);
+                    let address = self.bus.peek(data[1] as u16).unwrap() + self.Y;
                     MemoryRead {
-                        result: self.bus.peek((data[1] | (data[2] << 8)) as u16).unwrap(),
+                        result: self.bus.peek(address as u16).unwrap(),
                         cross_page: false,
                     }
                 }
@@ -199,227 +197,227 @@ impl<T: AddressSpace> Cpu<T> {
 
     //CPU functions
 
-    fn ADC(&mut self, operation: &Operation) -> Option<u8> {
+    fn ADC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn AND(&mut self, operation: &Operation) -> Option<u8> {
+    fn AND(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn ASL(&mut self, operation: &Operation) -> Option<u8> {
+    fn ASL(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BCC(&mut self, operation: &Operation) -> Option<u8> {
+    fn BCC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BCS(&mut self, operation: &Operation) -> Option<u8> {
+    fn BCS(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BEQ(&mut self, operation: &Operation) -> Option<u8> {
+    fn BEQ(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BIT(&mut self, operation: &Operation) -> Option<u8> {
+    fn BIT(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BMI(&mut self, operation: &Operation) -> Option<u8> {
+    fn BMI(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BNE(&mut self, operation: &Operation) -> Option<u8> {
+    fn BNE(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BPL(&mut self, operation: &Operation) -> Option<u8> {
+    fn BPL(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BRK(&mut self, operation: &Operation) -> Option<u8> {
+    fn BRK(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BVC(&mut self, operation: &Operation) -> Option<u8> {
+    fn BVC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn BVS(&mut self, operation: &Operation) -> Option<u8> {
+    fn BVS(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CLC(&mut self, operation: &Operation) -> Option<u8> {
+    fn CLC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CLD(&mut self, operation: &Operation) -> Option<u8> {
+    fn CLD(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CLI(&mut self, operation: &Operation) -> Option<u8> {
+    fn CLI(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CLV(&mut self, operation: &Operation) -> Option<u8> {
+    fn CLV(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CMP(&mut self, operation: &Operation) -> Option<u8> {
+    fn CMP(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CPX(&mut self, operation: &Operation) -> Option<u8> {
+    fn CPX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn CPY(&mut self, operation: &Operation) -> Option<u8> {
+    fn CPY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn DEC(&mut self, operation: &Operation) -> Option<u8> {
+    fn DEC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn DEX(&mut self, operation: &Operation) -> Option<u8> {
+    fn DEX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn DEY(&mut self, operation: &Operation) -> Option<u8> {
+    fn DEY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn EOR(&mut self, operation: &Operation) -> Option<u8> {
+    fn EOR(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn INC(&mut self, operation: &Operation) -> Option<u8> {
+    fn INC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn INX(&mut self, operation: &Operation) -> Option<u8> {
+    fn INX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn INY(&mut self, operation: &Operation) -> Option<u8> {
+    fn INY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn JMP(&mut self, operation: &Operation) -> Option<u8> {
+    fn JMP(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn JSR(&mut self, operation: &Operation) -> Option<u8> {
+    fn JSR(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn LDA(&mut self, operation: &Operation) -> Option<u8> {
+    fn LDA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn LDX(&mut self, operation: &Operation) -> Option<u8> {
+    fn LDX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn LDY(&mut self, operation: &Operation) -> Option<u8> {
+    fn LDY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn LSR(&mut self, operation: &Operation) -> Option<u8> {
+    fn LSR(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn NOP(&mut self, operation: &Operation) -> Option<u8> {
+    fn NOP(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn ORA(&mut self, operation: &Operation) -> Option<u8> {
+    fn ORA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn PHA(&mut self, operation: &Operation) -> Option<u8> {
+    fn PHA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn PHP(&mut self, operation: &Operation) -> Option<u8> {
+    fn PHP(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn PLA(&mut self, operation: &Operation) -> Option<u8> {
+    fn PLA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn PLP(&mut self, operation: &Operation) -> Option<u8> {
+    fn PLP(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn ROL(&mut self, operation: &Operation) -> Option<u8> {
+    fn ROL(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn ROR(&mut self, operation: &Operation) -> Option<u8> {
+    fn ROR(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn RTI(&mut self, operation: &Operation) -> Option<u8> {
+    fn RTI(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn RTS(&mut self, operation: &Operation) -> Option<u8> {
+    fn RTS(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn SBC(&mut self, operation: &Operation) -> Option<u8> {
+    fn SBC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn SEC(&mut self, operation: &Operation) -> Option<u8> {
+    fn SEC(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn SED(&mut self, operation: &Operation) -> Option<u8> {
+    fn SED(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn SEI(&mut self, operation: &Operation) -> Option<u8> {
+    fn SEI(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn STA(&mut self, operation: &Operation) -> Option<u8> {
+    fn STA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn STX(&mut self, operation: &Operation) -> Option<u8> {
+    fn STX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn STY(&mut self, operation: &Operation) -> Option<u8> {
+    fn STY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn TAX(&mut self, operation: &Operation) -> Option<u8> {
+    fn TAX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn TAY(&mut self, operation: &Operation) -> Option<u8> {
+    fn TAY(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn TSX(&mut self, operation: &Operation) -> Option<u8> {
+    fn TSX(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn TXA(&mut self, operation: &Operation) -> Option<u8> {
+    fn TXA(&mut self, operand: u8 -> Option<u8> {
         todo!();
     }
 
-    fn TXS(&mut self, operation: &Operation) -> Option<u8> {
+    fn TXS(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 
-    fn TYA(&mut self, operation: &Operation) -> Option<u8> {
+    fn TYA(&mut self, operand: u8) -> Option<u8> {
         todo!();
     }
 }
@@ -437,6 +435,17 @@ mod tests {
         cpu.PC = 10;
         let value = cpu.fetch_operand(&operation);
         assert_eq!(value.result, 20);
+        assert_eq!(value.cross_page, false);
+    }
+
+    #[test]
+    fn test_operand_Absolute() {
+        let mut cpu = Cpu::new(TestBus);
+        let mut operation = crate::instruction::OPCODES[0x20].clone().unwrap();
+        operation.data = Some(vec![0xFF, 0x10, 0x20]);
+        cpu.PC = 10;
+        let value = cpu.fetch_operand(&operation);
+        assert_eq!(value.result, (0x2010 % 255) as u8);
         assert_eq!(value.cross_page, false);
     }
 }
