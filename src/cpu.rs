@@ -1,13 +1,20 @@
 use crate::instruction::{AddressingMode, Instruction, Operation, OPCODES};
 use crate::memory::*;
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use bit_field::BitField;
+
+enum Operand {
+    Constant { value: u8 },
+    Address { location: u16 },
+    Accumulator,
+    None,
+}
 
 //http://nesdev.com/6502_cpu.txt
 pub struct Cpu<T: AddressSpace> {
     bus: T,
     //Registers
     PC: u16, //Program counter
-    S: u16,   //Stack pointer
+    S: u16,  //Stack pointer
     P: u8,   //Processor status
     A: u8,   //Accumulator
     X: u8,   //Index X
@@ -62,6 +69,14 @@ impl<T: AddressSpace> Cpu<T> {
         u16::from_le_bytes([byte1, byte2])
     }
 
+    fn set_Z(&mut self, val: bool) {
+        self.P.set_bit(1, val);
+    }
+
+    fn set_N(&mut self, val: bool) {
+        self.P.set_bit(7, val);
+    }
+
     pub fn step_cycle(&mut self) {
         //skip cycle if instruction is still in progress
         if self.operation_progress > 0 {
@@ -105,7 +120,7 @@ impl<T: AddressSpace> Cpu<T> {
             Instruction::INX => self.INX(&operand),
             Instruction::INY => self.INY(&operand),
             Instruction::JMP => self.JMP(&operand),
-            Instruction::JSR => self.JSR(u16::from_le_bytes([operation.data[0], operation.data[1]])),
+            Instruction::JSR => self.JSR(&operand),
             Instruction::LDA => self.LDA(&operand),
             Instruction::LDX => self.LDX(&operand),
             Instruction::LDY => self.LDY(&operand),
@@ -140,94 +155,62 @@ impl<T: AddressSpace> Cpu<T> {
             self.operation_progress += cycles;
         };
     }
-
-    pub fn fetch_operand(&self, operation: &Operation) -> MemoryRead {
+    //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
+    pub fn fetch_operand(&self, operation: &Operation) -> Operand {
         match operation.addressing_mode {
-            AddressingMode::Accumulator => MemoryRead {
-                result: self.A,
-                cross_page: false,
+            AddressingMode::Accumulator => Operand::Accumulator,
+            AddressingMode::Immediate => Operand::Constant {
+                value: operation.data[0],
             },
-            AddressingMode::Immediate => MemoryRead {
-                result: operation.data[0],
-                cross_page: false,
+            AddressingMode::Implied => Operand::None,
+            AddressingMode::Relative => Operand::Address {
+                location: relative_address(operation.data[0], self.PC),
             },
-
-            AddressingMode::Implied => MemoryRead {
-                //TODO make None
-                result: 0,
-                cross_page: false,
+            AddressingMode::Absolute => Operand::Address {
+                location: absolute_address(operation.data[0], operation.data[1]),
             },
-            AddressingMode::Relative => MemoryRead {
-                result: self.bus.peek(relative_address(operation.data[0], self.PC)),
-                cross_page: (operation.data[0] / 255) as u16 != (self.PC / 255) as u16,
+            AddressingMode::ZeroPage => Operand::Address {
+                location: zero_page_address(operation.data[0]),
             },
-            AddressingMode::Absolute => MemoryRead {
-                result: self.bus.peek(absolute_address(operation.data[0], operation.data[1])),
-                cross_page: false,
-            }, //Be careful of endianess here
-            AddressingMode::ZeroPage => MemoryRead {
-                result: self.bus.peek(zero_page_address(operation.data[0])),
-                cross_page: false,
+            AddressingMode::Indirect => Operand::Address {
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]]) + self.PC,
             },
-            AddressingMode::Indirect => MemoryRead {
-                result: self
-                    .bus
-                    .peek(u16::from_le_bytes([operation.data[0], operation.data[1]]) + self.PC)
-                    ,
-                cross_page: (u16::from_le_bytes([operation.data[0], operation.data[1]]) / 255) as u16
-                    != (self.PC / 255) as u16,
+            AddressingMode::AbsoluteX => Operand::Address {
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]])
+                    + self.X as u16,
             },
-            AddressingMode::AbsoluteX => MemoryRead {
-                result: self
-                    .bus
-                    .peek(u16::from_le_bytes([operation.data[0], operation.data[1]]) + self.X as u16)
-                    ,
-                cross_page: (u16::from_le_bytes([operation.data[0], operation.data[1]]) / 255) as u16
-                    != (self.X / 255) as u16,
-            },
-            AddressingMode::AbsoluteY => MemoryRead {
-                result: self
-                    .bus
-                    .peek(u16::from_le_bytes([operation.data[0], operation.data[1]]) + self.Y as u16)
-                    ,
-                cross_page: (u16::from_le_bytes([operation.data[0], operation.data[1]]) / 255) as u16
-                    != (self.Y / 255) as u16,
+            AddressingMode::AbsoluteY => Operand::Address {
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]])
+                    + self.Y as u16,
             },
 
-            AddressingMode::ZeroPageX => MemoryRead {
-                result: self.bus.peek(operation.data[0].wrapping_add(self.X) as u16),
-                cross_page: (operation.data[0] as u16 / 255) != (self.X / 255) as u16,
+            AddressingMode::ZeroPageX => Operand::Address {
+                location: operation.data[0].wrapping_add(self.X) as u16,
             },
-            AddressingMode::ZeroPageY => MemoryRead {
-                result: self.bus.peek(operation.data[0].wrapping_add(self.Y) as u16),
-                cross_page: (operation.data[0] as u16 / 255) != (self.Y / 255) as u16,
+            AddressingMode::ZeroPageY => Operand::Address {
+                location: operation.data[0].wrapping_add(self.Y) as u16,
             },
 
             AddressingMode::IndirectX => {
                 let addressLocation = operation.data[0].wrapping_add(self.X);
-                MemoryRead {
-                    result: self
-                        .bus
-                        .peek(self.bus.peek_16(addressLocation as u16))
-                        ,
-                    cross_page: false,
+                Operand::Address {
+                    location: self.bus.peek_16(addressLocation as u16),
                 }
             }
 
             AddressingMode::IndirectY => {
                 let address = self.bus.peek(operation.data[0] as u16) + self.Y;
-                MemoryRead {
-                    result: self.bus.peek(address as u16),
-                    cross_page: false,
+                Operand::Address {
+                    location: self.bus.peek_16(address as u16),
                 }
             }
         }
     }
 
     fn consume_next_operation(&mut self) -> Operation {
-        print!("PC: {} ", self.PC);
+        print!("PC: {:#X} ", self.PC);
         let opcode_byte = self.bus.peek(self.PC);
-        println!("Byte: {}", opcode_byte);
+        println!("Byte: {:#X}", opcode_byte);
         self.PC += 1;
         let mut operation = OPCODES[opcode_byte as usize].clone().unwrap();
         let extra_bytes: u16 = match operation.addressing_mode {
@@ -236,242 +219,254 @@ impl<T: AddressSpace> Cpu<T> {
             AddressingMode::AbsoluteY => 2,
             AddressingMode::Indirect => 2,
             AddressingMode::Implied => 0,
-            _ => 1
+            _ => 1,
         };
         for i in (0..extra_bytes) {
             operation.data.push(self.bus.peek(self.PC + i));
-        };
+        }
         self.PC += extra_bytes;
         operation
     }
 
     //CPU functions
 
-    fn ADC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn ADC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn AND(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn AND(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn ASL(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn ASL(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BCC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BCC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BCS(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BCS(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BEQ(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BEQ(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BIT(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BIT(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BMI(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BMI(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BNE(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BNE(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BPL(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BPL(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BRK(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BRK(&mut self, operand: &Operand) -> Option<u8> {
         //TODO Interrupts
         Some(5)
     }
 
-    fn BVC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BVC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn BVS(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn BVS(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CLC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CLC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CLD(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CLD(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CLI(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CLI(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CLV(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CLV(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CMP(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CMP(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CPX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CPX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn CPY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn CPY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn DEC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn DEC(&mut self, operand: &Operand) -> Option<u8> {
+        let address = unpack_address(operand);
+        let val = self.bus.peek(address).wrapping_sub(1);
+        self.bus.poke(address, val);
+        self.set_Z(val == 0);
+        self.set_N(val.get_bit(7));
+        Some(2)
+    }
+
+    fn DEX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn DEX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn DEY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn DEY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn EOR(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn EOR(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn INC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn INC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn INX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn INX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn INY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn INY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn JMP(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn JMP(&mut self, operand: &MemoryRead) -> Option<u8> {
-        todo!();
-    }
-
-    fn JSR(&mut self, operand: u16) -> Option<u8> {
+    fn JSR(&mut self, operand: &Operand) -> Option<u8> {
         self.push_16(self.PC);
-        self.PC = operand;
+        self.PC = unpack_address(operand);
         Some(4)
     }
 
-    fn LDA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn LDA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn LDX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn LDX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn LDY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn LDY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn LSR(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn LSR(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn NOP(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn NOP(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn ORA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn ORA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn PHA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn PHA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn PHP(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn PHP(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn PLA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn PLA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn PLP(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn PLP(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn ROL(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn ROL(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn ROR(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn ROR(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn RTI(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn RTI(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn RTS(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn RTS(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn SBC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn SBC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn SEC(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn SEC(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn SED(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn SED(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn SEI(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn SEI(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn STA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn STA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn STX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn STX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn STY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn STY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TAX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TAX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TAY(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TAY(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TSX(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TSX(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TXA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TXA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TXS(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TXS(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
     }
 
-    fn TYA(&mut self, operand: &MemoryRead) -> Option<u8> {
+    fn TYA(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
+    }
+}
+
+fn unpack_address(operand: &Operand) -> u16 {
+    match operand {
+        Operand::Address { location } => location.clone(),
+        _ => panic!(),
     }
 }
 
@@ -479,26 +474,4 @@ impl<T: AddressSpace> Cpu<T> {
 mod tests {
     use super::*;
     use crate::memory::{Bus, Ram};
-
-    #[test]
-    fn test_operand_relative() {
-        let mut cpu = Cpu::new(TestBus);
-        let mut operation = crate::instruction::OPCODES[0x10].clone().unwrap();
-        operation.data = vec![10];
-        cpu.PC = 10;
-        let value = cpu.fetch_operand(&operation);
-        assert_eq!(value.result, 20);
-        assert_eq!(value.cross_page, false);
-    }
-
-    #[test]
-    fn test_operand_Absolute() {
-        let mut cpu = Cpu::new(TestBus);
-        let mut operation = crate::instruction::OPCODES[0x20].clone().unwrap();
-        operation.data = vec![0x10, 0x20];
-        cpu.PC = 10;
-        let value = cpu.fetch_operand(&operation);
-        assert_eq!(value.result, (0x2010 % 255) as u8);
-        assert_eq!(value.cross_page, false);
-    }
 }

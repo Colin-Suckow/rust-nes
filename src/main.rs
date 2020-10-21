@@ -46,9 +46,22 @@ fn main() {
         cartridge: rom,
     };
 
+    //bus.write_mem();
+
     let mut cpu = Cpu::new(bus);
 
+    // for i in (0..255) {
+    //     let op = crate::instruction::OPCODES[i].clone();
+    //     print!("Address: {:#X} OP: ", i);
+    //     match op {
+    //         Some(o) => println!("{:?}", o.instruction),
+    //         None => println!("None"),
+    //     };
+    // }
+
     cpu.reset();
+
+    
 
     loop {
         cpu.step_cycle();

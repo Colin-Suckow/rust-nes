@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::cartridge;
 
 pub trait AddressSpace {
@@ -39,11 +41,22 @@ pub struct Bus {
 
 impl Bus {
     pub fn debug_print_memory(&self) {
-        for address in 0..2300 {
+        for address in 0..0xFFFF {
             let val = self.peek(address as u16);
-            print!("{} : {}, ", address, val);
+            print!("{:#X} : {}, ", address, val);
             if address % 5 == 0 {
                 print!("\n");
+            }
+        }
+    }
+
+    pub fn write_mem(&self) {
+        let mut file = std::fs::File::create("mem.txt").unwrap();
+        for address in 0..0x10000 {
+            let val = self.peek(address as u16);
+            file.write_all(format!("{:#X} : {}, ", address, val).as_bytes()).unwrap();
+            if address % 5 == 0 {
+                file.write_all("\n".as_bytes()).unwrap();
             }
         }
     }
