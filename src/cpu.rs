@@ -77,12 +77,21 @@ impl<T: AddressSpace> Cpu<T> {
         self.P.set_bit(7, val);
     }
 
+    fn set_B(&mut self, val: bool) {
+        self.P.set_bit(4, val);
+    }
+
+    fn set_I(&mut self, val: bool) {
+        self.P.set_bit(2, val);
+    }
+
     pub fn step_cycle(&mut self) {
         //skip cycle if instruction is still in progress
         if self.operation_progress > 0 {
             self.operation_progress -= 1;
             return;
         }
+        println!("A:{} X:{} Y:{}", self.A, self.X, self.Y);
 
         let operation = self.consume_next_operation();
 
@@ -271,7 +280,13 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BRK(&mut self, operand: &Operand) -> Option<u8> {
-        //TODO Interrupts
+        self.PC += 1;
+        self.set_I(true);
+        self.set_B(true);
+        let vec = self.bus.peek_16(0xFFFE);
+        self.push_16(self.PC);
+        self.push(self.P);
+        self.PC = vec;
         Some(5)
     }
 
@@ -363,7 +378,17 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn LDY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Constant { value } => self.Y = value.clone(),
+            Operand::Address { location } => self.Y = self.bus.peek(location.clone()),
+            Operand::Accumulator => self.Y = self.A,
+            Operand::None => (),
+        }
+        
+        self.set_N(self.Y.get_bit(7));
+        self.set_Z(self.Y == 0);
+        
+        None
     }
 
     fn LSR(&mut self, operand: &Operand) -> Option<u8> {

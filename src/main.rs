@@ -46,7 +46,7 @@ fn main() {
         cartridge: rom,
     };
 
-    //bus.write_mem();
+    bus.write_mem();
 
     let mut cpu = Cpu::new(bus);
 

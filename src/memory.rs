@@ -7,7 +7,7 @@ pub trait AddressSpace {
     fn poke(&mut self, ptr: u16, byte: u8);
     fn peek_16(&self, ptr: u16) -> u16 {
         let byte1 = self.peek(ptr);
-        let byte2 = self.peek(ptr);
+        let byte2 = self.peek(ptr + 1);
         u16::from_le_bytes([byte1, byte2])
     }
 }
@@ -54,7 +54,7 @@ impl Bus {
         let mut file = std::fs::File::create("mem.txt").unwrap();
         for address in 0..0x10000 {
             let val = self.peek(address as u16);
-            file.write_all(format!("{:#X} : {}, ", address, val).as_bytes()).unwrap();
+            file.write_all(format!("{:#X} : {:#X}, ", address, val).as_bytes()).unwrap();
             if address % 5 == 0 {
                 file.write_all("\n".as_bytes()).unwrap();
             }
@@ -126,6 +126,12 @@ mod tests {
     fn test_testbus() {
         let bus = TestBus;
         assert_eq!(bus.peek(256), 1 as u8);
+    }
+
+    #[test]
+    fn test_testbus16() {
+        let bus = TestBus;
+        assert_eq!(bus.peek_16(0x20), 0x2120);
     }
 
     #[test]
