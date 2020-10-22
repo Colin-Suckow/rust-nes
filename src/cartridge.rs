@@ -67,7 +67,11 @@ impl memory::AddressSpace for Cartridge {
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
-        self.prg_rom_data[((ptr - 0x4020) as usize) % 0x3FFF] = byte;
+        match ptr {
+            0x8000..=0xBFFF => self.prg_rom_data[((ptr - 0x8000) as usize)] = byte,
+            0xC000..=0xFFFF => self.prg_rom_data[((ptr - 0xC000) as usize)] = byte,
+            _ => ()
+        };
     }
 }
 
