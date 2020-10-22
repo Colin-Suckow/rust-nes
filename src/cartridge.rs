@@ -31,9 +31,13 @@ impl Cartridge {
         let mut char_mirror_text = String::new();
 
         let prg_start = 16 as usize;
-        let prg_end = prg_start + (header[4] as usize * 16384) - 1;
+        let prg_end = prg_start + (header[4] as usize * 16384);
         let chr_start = prg_end as usize;
         let chr_end = chr_start + (header[5] as usize * 8192) as usize;
+
+        // for val in data[prg_start..prg_end].to_vec() {
+        //     print!("{:#X} ", val);
+        // }
 
         Cartridge {
             trainer_present: trainer_present,
@@ -54,7 +58,12 @@ impl Cartridge {
 
 impl memory::AddressSpace for Cartridge {
     fn peek(&self, ptr: u16) -> u8 {
-        self.prg_rom_data[((ptr - 0x4020) as usize) % 0x3FFF]
+        match ptr {
+            0x8000..=0xBFFF => self.prg_rom_data[((ptr - 0x8000) as usize)],
+            0xC000..=0xFFFF => self.prg_rom_data[((ptr - 0xC000) as usize)],
+            _ => 0xFF
+        }
+        
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {

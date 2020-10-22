@@ -19,7 +19,7 @@ pub struct Ram {
 impl Ram {
     pub fn new() -> Ram {
         Ram {
-            data: vec![0; 0x0800],
+            data: vec![0xFF; 0x0800],
         }
     }
 }

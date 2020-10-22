@@ -2,7 +2,7 @@ use crate::instruction::{AddressingMode, Instruction, Operation, OPCODES};
 use crate::memory::*;
 use bit_field::BitField;
 
-enum Operand {
+pub enum Operand {
     Constant { value: u8 },
     Address { location: u16 },
     Accumulator,
@@ -71,6 +71,10 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn set_Z(&mut self, val: bool) {
         self.P.set_bit(1, val);
+    }
+
+    fn get_Z(&self) -> bool {
+        self.P.get_bit(1)
     }
 
     fn set_N(&mut self, val: bool) {
@@ -260,7 +264,13 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BEQ(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if self.get_Z() {
+            self.PC = addr;
+            Some(2)
+        } else {
+            None
+        }
     }
 
     fn BIT(&mut self, operand: &Operand) -> Option<u8> {
@@ -370,7 +380,14 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn LDA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Constant { value } => {self.A = value.clone()}
+            Operand::Address { location } => {self.A = self.bus.peek(location.clone())}
+            _ => ()
+        }
+        self.set_N(self.A.get_bit(7));
+        self.set_Z(self.A == 0);
+        None
     }
 
     fn LDX(&mut self, operand: &Operand) -> Option<u8> {
@@ -384,10 +401,10 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Accumulator => self.Y = self.A,
             Operand::None => (),
         }
-        
+
         self.set_N(self.Y.get_bit(7));
         self.set_Z(self.Y == 0);
-        
+
         None
     }
 
@@ -433,6 +450,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn RTS(&mut self, operand: &Operand) -> Option<u8> {
         todo!();
+        self.PC = self.pop_16() + 1;
+        None
     }
 
     fn SBC(&mut self, operand: &Operand) -> Option<u8> {
@@ -452,7 +471,11 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn STA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => self.bus.poke(location.clone(), self.A),
+            _ => {}
+        }
+        None
     }
 
     fn STX(&mut self, operand: &Operand) -> Option<u8> {
