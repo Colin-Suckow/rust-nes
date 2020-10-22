@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use crate::cartridge;
+use crate::ppu;
 
 pub trait AddressSpace {
     fn peek(&self, ptr: u16) -> u8;
@@ -19,7 +20,7 @@ pub struct Ram {
 impl Ram {
     pub fn new() -> Ram {
         Ram {
-            data: vec![0xFF; 0x0800],
+            data: vec![0; 0x0800],
         }
     }
 }
@@ -37,6 +38,7 @@ impl AddressSpace for Ram {
 pub struct Bus {
     pub ram: Ram,
     pub cartridge: cartridge::Cartridge,
+    pub ppu: ppu::DummyPPU,
 }
 
 impl Bus {
@@ -64,8 +66,12 @@ impl Bus {
 
 impl AddressSpace for Bus {
     fn peek(&self, ptr: u16) -> u8 {
+        if ptr == 0x4016 {
+            println!("============= CONTROLLER READ");
+        };
         return match ptr {
             0x0000..=0x07FF => self.ram.peek(ptr),
+            0x2000..=0x2007 => self.ppu.peek(ptr),
             0x4020..=0xFFFF => self.cartridge.peek(ptr),
             _ => 0,
         };
@@ -74,6 +80,7 @@ impl AddressSpace for Bus {
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
             0x0000..=0x07FF => self.ram.poke(ptr, byte),
+            0x2000..=0x2007 => self.ppu.poke(ptr, byte),
             0x4020..=0xFFFF => self.cartridge.poke(ptr, byte),
             _ => (),
         }

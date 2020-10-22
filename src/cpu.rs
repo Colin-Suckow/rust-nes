@@ -1,7 +1,7 @@
 use crate::instruction::{AddressingMode, Instruction, Operation, OPCODES};
 use crate::memory::*;
 use bit_field::BitField;
-
+use std::io::Write;
 pub enum Operand {
     Constant { value: u8 },
     Address { location: u16 },
@@ -14,12 +14,13 @@ pub struct Cpu<T: AddressSpace> {
     bus: T,
     //Registers
     PC: u16, //Program counter
-    S: u16,  //Stack pointer
+    S: u8,  //Stack pointer
     P: u8,   //Processor status
     A: u8,   //Accumulator
     X: u8,   //Index X
     Y: u8,   //Index Y
     operation_progress: u8,
+    log: std::fs::File,
 }
 
 pub struct MemoryRead {
@@ -32,41 +33,47 @@ impl<T: AddressSpace> Cpu<T> {
         Cpu {
             bus: bus,
             PC: 0,
-            S: 0x0100,
-            P: 0,
+            S: 0x00FD,
+            P: 0x24,
             A: 0,
             X: 0,
             Y: 0,
             operation_progress: 0,
+            log: std::fs::File::create("mytest.log").unwrap(),
         }
     }
 
     pub fn reset(&mut self) {
-        self.PC = self.bus.peek_16(0xFFFC);
+        self.PC = 0xC000;//self.bus.peek_16(0xFFFC);
+        self.P = 0x24;
     }
 
     fn push(&mut self, value: u8) {
-        self.bus.poke(self.S, value);
-        self.S += 1;
+        //println!("-->push {:#X}", value);
+        self.bus.poke(self.S as u16, value);
+        self.S -= 1;
     }
 
     fn pop(&mut self) -> u8 {
-        let value = self.bus.peek(self.S);
-        if self.S > 0x0100 {
-            self.S -= 1;
-        }
+        self.S += 1;
+        let value = self.bus.peek(self.S as u16);
+        //println!("-->pop {:#X}", value);
         value
     }
 
     fn push_16(&mut self, value: u16) {
-        self.push((value >> 8) as u8);
-        self.push((value & 0x00001111) as u8);
+        //println!("push16 {:#X}", value);
+        let bytes = value.to_le_bytes();
+        self.push(bytes[1]);
+        self.push(bytes[0]);
     }
 
     fn pop_16(&mut self) -> u16 {
-        let byte2 = self.pop();
         let byte1 = self.pop();
-        u16::from_le_bytes([byte1, byte2])
+        let byte2 = self.pop();
+        let num = u16::from_le_bytes([byte1, byte2]);
+        //println!("pop16 {:#X}", num);
+        num
     }
 
     fn set_Z(&mut self, val: bool) {
@@ -81,6 +88,10 @@ impl<T: AddressSpace> Cpu<T> {
         self.P.set_bit(7, val);
     }
 
+    fn get_N(&self) -> bool {
+        self.P.get_bit(7)
+    }
+
     fn set_B(&mut self, val: bool) {
         self.P.set_bit(4, val);
     }
@@ -89,13 +100,32 @@ impl<T: AddressSpace> Cpu<T> {
         self.P.set_bit(2, val);
     }
 
+    fn set_C(&mut self, val: bool) {
+        self.P.set_bit(0, val);
+    }
+
+    fn get_C(&self) -> bool {
+        self.P.get_bit(0)
+    }
+
+    fn set_V(&mut self, val: bool) {
+        self.P.set_bit(5, val);
+    }
+
+    fn get_V(&self) -> bool {
+        self.P.get_bit(5)
+    }
+
+   
+
     pub fn step_cycle(&mut self) {
         //skip cycle if instruction is still in progress
         if self.operation_progress > 0 {
             self.operation_progress -= 1;
             return;
         }
-        println!("A:{} X:{} Y:{}", self.A, self.X, self.Y);
+
+        let inst_PC = self.PC;
 
         let operation = self.consume_next_operation();
 
@@ -103,6 +133,27 @@ impl<T: AddressSpace> Cpu<T> {
         self.operation_progress = operation.base_cycle_count - 1;
 
         let operand = self.fetch_operand(&operation);
+
+        let operand_value = match &operand {
+            Operand::Constant { value } => {value.clone() as u16}
+            Operand::Address { location } => {location.clone()}
+            Operand::Accumulator => {self.A.clone() as u16}
+            Operand::None => 0
+        };
+
+        let op_text = match &operand {
+            Operand::Constant { value } => format!("{:?} #${:02X}", operation.instruction, value.clone()),
+            Operand::Address { location } => {
+                match &operation.addressing_mode {
+                    AddressingMode::Relative | AddressingMode::Absolute => format!("{:?} ${:04X}",operation.instruction, location.clone()),
+                    _ => format!("{:?} ${:02X} = {:02X}",operation.instruction, location.clone(), self.bus.peek(location.clone()))
+                }
+                
+            },
+            _ => format!("{:?}", operation.instruction)
+        };
+
+        self.log.write_all(format!("{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n", inst_PC, op_text , self.A, self.X, self.Y, self.P, self.S).as_bytes());
 
         let extra_cycles = match operation.instruction {
             Instruction::ADC => self.ADC(&operand),
@@ -221,9 +272,8 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn consume_next_operation(&mut self) -> Operation {
-        print!("PC: {:#X} ", self.PC);
         let opcode_byte = self.bus.peek(self.PC);
-        println!("Byte: {:#X}", opcode_byte);
+        //println!("PC: {:#X} : {:#X}", self.PC, opcode_byte);
         self.PC += 1;
         let mut operation = OPCODES[opcode_byte as usize].clone().unwrap();
         let extra_bytes: u16 = match operation.addressing_mode {
@@ -244,11 +294,29 @@ impl<T: AddressSpace> Cpu<T> {
     //CPU functions
 
     fn ADC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let val = match operand {
+            Operand::Constant { value } => {value.clone()},
+            Operand::Address { location } => self.bus.peek(location.clone()),
+            _ => 0,
+        };
+        let old_n = self.A.get_bit(7);
+        self.set_C(self.A as u16 + val as u16 > 255);
+        self.A = self.A.wrapping_add(val);
+        self.set_N(self.A.get_bit(7));
+        self.set_V(old_n != self.get_N());
+        self.set_Z(self.A == 0);
+        None
     }
 
     fn AND(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let op = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            _ => 0
+        };
+        self.A = self.A & op;
+        self.set_standard_flags(&self.A.clone());
+        None
     }
 
     fn ASL(&mut self, operand: &Operand) -> Option<u8> {
@@ -256,11 +324,23 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BCC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if !self.get_C() {
+            self.PC = addr;
+            Some(2)
+        } else {
+            None
+        }
     }
 
     fn BCS(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if self.get_C() {
+            self.PC = addr;
+            Some(2)
+        } else {
+            None
+        }
     }
 
     fn BEQ(&mut self, operand: &Operand) -> Option<u8> {
@@ -282,20 +362,30 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BNE(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if !self.get_Z() {
+            self.PC = addr;
+            Some(2)
+        } else {
+            None
+        }
     }
 
     fn BPL(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if !self.get_N() {
+            self.PC = addr;
+        };
+        None
     }
 
     fn BRK(&mut self, operand: &Operand) -> Option<u8> {
+        todo!();
         self.PC += 1;
         self.set_I(true);
         self.set_B(true);
         let vec = self.bus.peek_16(0xFFFE);
         self.push_16(self.PC);
-        self.push(self.P);
         self.PC = vec;
         Some(5)
     }
@@ -309,31 +399,61 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn CLC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.set_C(false);
+        None
     }
 
     fn CLD(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        None //Decimal mode is disable on the nes cpu
     }
 
     fn CLI(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.set_I(false);
+        None
     }
 
     fn CLV(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.set_V(false);
+        None
     }
 
     fn CMP(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let value = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()),
+            Operand::Accumulator => self.A.clone(),
+            Operand::None => 0
+        };
+        self.set_C(value <= self.A);
+        self.set_N((self.A - value).get_bit(7));
+        self.set_Z(value == self.A);
+        None
     }
 
     fn CPX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let value = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()),
+            Operand::Accumulator => self.A.clone(),
+            Operand::None => 0
+        };
+        self.set_C(value <= self.X);
+        self.set_N((self.X - value).get_bit(7));
+        self.set_Z(value == self.X);
+        None
     }
 
     fn CPY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let value = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()),
+            Operand::Accumulator => self.A.clone(),
+            Operand::None => 0
+        };
+        self.set_C(value <= self.Y);
+        self.set_N((self.Y - value).get_bit(7));
+        self.set_Z(value == self.Y);
+        None
     }
 
     fn DEC(&mut self, operand: &Operand) -> Option<u8> {
@@ -346,35 +466,57 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn DEX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.X = self.X.wrapping_sub(1);
+        self.set_standard_flags(&self.X.clone());
+        None
     }
 
     fn DEY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.Y = self.Y.wrapping_sub(1);
+        self.set_standard_flags(&self.Y.clone());
+        None
     }
 
     fn EOR(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let op = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            _ => 0
+        };
+        self.A = self.A ^ op;
+        self.set_standard_flags(&self.A.clone());
+        None
     }
 
     fn INC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let address = unpack_address(operand);
+        let val = self.bus.peek(address).wrapping_add(1);
+        self.bus.poke(address, val);
+        self.set_Z(val == 0);
+        self.set_N(val.get_bit(7));
+        Some(2)
     }
 
     fn INX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.X = self.X.wrapping_add(1);
+        self.set_standard_flags(&self.X.clone());
+        None
     }
 
     fn INY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.Y = self.Y.wrapping_add(1);
+        self.set_standard_flags(&self.Y.clone());
+        None
     }
 
     fn JMP(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        self.PC = addr;
+        None
     }
 
     fn JSR(&mut self, operand: &Operand) -> Option<u8> {
-        self.push_16(self.PC);
+        self.push_16(self.PC - 1);
         self.PC = unpack_address(operand);
         Some(4)
     }
@@ -384,14 +526,24 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Constant { value } => {self.A = value.clone()}
             Operand::Address { location } => {self.A = self.bus.peek(location.clone())}
             _ => ()
-        }
+        };
         self.set_N(self.A.get_bit(7));
         self.set_Z(self.A == 0);
         None
     }
 
     fn LDX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Constant { value } => self.X = value.clone(),
+            Operand::Address { location } => self.X = self.bus.peek(location.clone()),
+            Operand::Accumulator => self.X = self.A,
+            Operand::None => (),
+        }
+
+        self.set_N(self.X.get_bit(7));
+        self.set_Z(self.X == 0);
+
+        None
     }
 
     fn LDY(&mut self, operand: &Operand) -> Option<u8> {
@@ -409,31 +561,62 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn LSR(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => {
+                let val = self.bus.peek(location.clone());
+                let shifted_val = val >> 1;
+                self.set_C(val.get_bit(0));
+                self.set_N(false);
+                self.set_Z(shifted_val == 0);
+                self.bus.poke(location.clone(), shifted_val);
+            },
+            Operand::Accumulator => {
+                let val = self.A;
+                let shifted_val = val >> 1;
+                self.set_C(val.get_bit(0));
+                self.set_N(false);
+                self.set_Z(shifted_val == 0);
+                self.A = shifted_val;
+            }
+            _ => ()
+        }
+        None
     }
 
     fn NOP(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        None
     }
 
     fn ORA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let op = match operand {
+            Operand::Constant { value } => value.clone(),
+            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            _ => 0
+        };
+        self.A = self.A | op;
+        self.set_standard_flags(&self.A.clone());
+        None
     }
 
     fn PHA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.push(self.A);
+        Some(1)
     }
 
     fn PHP(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.push(self.P);
+        Some(1)
     }
 
     fn PLA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.A = self.pop();
+        self.set_standard_flags(&self.A.clone());
+        Some(2)
     }
 
     fn PLP(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.P = self.pop();
+        Some(2)
     }
 
     fn ROL(&mut self, operand: &Operand) -> Option<u8> {
@@ -441,7 +624,28 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn ROR(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => {
+                let val = self.bus.peek(location.clone());
+                let mut rotated_val = val >> 1;
+                rotated_val.set_bit(7, self.get_C());
+                self.set_C(val.get_bit(0));
+                self.set_N(false);
+                self.set_Z(rotated_val == 0);
+                self.bus.poke(location.clone(), rotated_val);
+            },
+            Operand::Accumulator => {
+                let val = self.A;
+                let mut rotated_val = val >> 1;
+                rotated_val.set_bit(7, self.get_C());
+                self.set_C(val.get_bit(0));
+                self.set_N(false);
+                self.set_Z(rotated_val == 0);
+                self.A = rotated_val;
+            }
+            _ => ()
+        }
+        None
     }
 
     fn RTI(&mut self, operand: &Operand) -> Option<u8> {
@@ -449,8 +653,7 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn RTS(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
-        self.PC = self.pop_16() + 1;
+        self.PC = self.pop_16().wrapping_add(1);
         None
     }
 
@@ -459,15 +662,17 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn SEC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.set_C(true);
+        None
     }
 
     fn SED(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        None //Nes does not implement decimal mode
     }
 
     fn SEI(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.set_I(true);
+        None
     }
 
     fn STA(&mut self, operand: &Operand) -> Option<u8> {
@@ -479,35 +684,58 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn STX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => self.bus.poke(location.clone(), self.X),
+            _ => {}
+        }
+        None
     }
 
     fn STY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => self.bus.poke(location.clone(), self.Y),
+            _ => {}
+        }
+        None
     }
 
     fn TAX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.X = self.A;
+        self.set_standard_flags(&self.X.clone());
+        None
     }
 
     fn TAY(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.Y = self.A;
+        self.set_standard_flags(&self.Y.clone());
+        None
     }
 
     fn TSX(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.X = self.S;
+        self.set_standard_flags(&self.X.clone());
+        None
     }
 
     fn TXA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.A = self.X;
+        self.set_standard_flags(&self.A.clone());
+        None
     }
 
     fn TXS(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.S = self.X;
+        None
     }
 
     fn TYA(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.A = self.Y;
+        self.set_standard_flags(&self.A.clone());
+        None
+    }
+    fn set_standard_flags(&mut self, val: &u8) {
+        self.set_Z(*val == 0);
+        self.set_N(val.get_bit(7));
     }
 }
 

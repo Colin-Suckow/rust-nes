@@ -3,11 +3,13 @@
 
 extern crate clap;
 use clap::{App, Arg};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 mod cartridge;
 mod cpu;
 mod instruction;
 mod memory;
+mod ppu;
 
 use cpu::Cpu;
 use memory::AddressSpace;
@@ -44,6 +46,7 @@ fn main() {
     let mut bus = memory::Bus {
         ram: memory::Ram::new(),
         cartridge: rom,
+        ppu: crate::ppu::DummyPPU,
     };
 
     bus.write_mem();
@@ -61,10 +64,13 @@ fn main() {
 
     cpu.reset();
 
-    
+    let mut start = SystemTime::now();
 
     loop {
+        //start = SystemTime::now();
         cpu.step_cycle();
+        //let end_time = SystemTime::now();
+        //println!("{:?}mhz", ((1.0 / end_time.duration_since(start).unwrap().as_secs_f64()) / 1000000.0).round());
     }
     
 }

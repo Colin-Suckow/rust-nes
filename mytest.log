@@ -1,0 +1,38 @@
+C000 JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD
+C5F5 LDX #$00                        A:00 X:00 Y:00 P:24 SP:FD
+C5F7 STX $00 = 00                    A:00 X:00 Y:00 P:26 SP:FD
+C5F9 STX $10 = 00                    A:00 X:00 Y:00 P:26 SP:FD
+C5FB STX $11 = 00                    A:00 X:00 Y:00 P:26 SP:FD
+C5FD JSR $C72D                       A:00 X:00 Y:00 P:26 SP:FD
+C72D NOP                             A:00 X:00 Y:00 P:26 SP:FB
+C72E SEC                             A:00 X:00 Y:00 P:26 SP:FB
+C72F BCS $C735                       A:00 X:00 Y:00 P:27 SP:FB
+C735 NOP                             A:00 X:00 Y:00 P:27 SP:FB
+C736 CLC                             A:00 X:00 Y:00 P:27 SP:FB
+C737 BCS $C73C                       A:00 X:00 Y:00 P:26 SP:FB
+C739 JMP $C740                       A:00 X:00 Y:00 P:26 SP:FB
+C740 NOP                             A:00 X:00 Y:00 P:26 SP:FB
+C741 SEC                             A:00 X:00 Y:00 P:26 SP:FB
+C742 BCC $C747                       A:00 X:00 Y:00 P:27 SP:FB
+C744 JMP $C74B                       A:00 X:00 Y:00 P:27 SP:FB
+C74B NOP                             A:00 X:00 Y:00 P:27 SP:FB
+C74C CLC                             A:00 X:00 Y:00 P:27 SP:FB
+C74D BCC $C753                       A:00 X:00 Y:00 P:26 SP:FB
+C753 NOP                             A:00 X:00 Y:00 P:26 SP:FB
+C754 LDA #$00                        A:00 X:00 Y:00 P:26 SP:FB
+C756 BEQ $C75C                       A:00 X:00 Y:00 P:26 SP:FB
+C75C NOP                             A:00 X:00 Y:00 P:26 SP:FB
+C75D LDA #$40                        A:00 X:00 Y:00 P:26 SP:FB
+C75F BEQ $C764                       A:40 X:00 Y:00 P:24 SP:FB
+C761 JMP $C768                       A:40 X:00 Y:00 P:24 SP:FB
+C768 NOP                             A:40 X:00 Y:00 P:24 SP:FB
+C769 LDA #$40                        A:40 X:00 Y:00 P:24 SP:FB
+C76B BNE $C771                       A:40 X:00 Y:00 P:24 SP:FB
+C771 NOP                             A:40 X:00 Y:00 P:24 SP:FB
+C772 LDA #$00                        A:40 X:00 Y:00 P:24 SP:FB
+C774 BNE $C779                       A:00 X:00 Y:00 P:26 SP:FB
+C776 JMP $C77D                       A:00 X:00 Y:00 P:26 SP:FB
+C77D NOP                             A:00 X:00 Y:00 P:26 SP:FB
+C77E LDA #$FF                        A:00 X:00 Y:00 P:26 SP:FB
+C780 STA $01 = 00                    A:FF X:00 Y:00 P:A4 SP:FB
+C782 BIT $01 = FF                    A:FF X:00 Y:00 P:A4 SP:FB
