@@ -23,10 +23,6 @@ pub struct Cpu<T: AddressSpace> {
     log: std::fs::File,
 }
 
-pub struct MemoryRead {
-    result: u8,
-    cross_page: bool,
-}
 
 impl<T: AddressSpace> Cpu<T> {
     pub fn new(bus: T) -> Cpu<T> {
@@ -49,15 +45,16 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn push(&mut self, value: u8) {
-        //println!("-->push {:#X}", value);
-        self.bus.poke(self.S as u16, value);
+        println!("-->push {:#X}", value);
         self.S -= 1;
+        self.bus.poke(self.S as u16, value);
+        
     }
 
     fn pop(&mut self) -> u8 {
-        self.S += 1;
         let value = self.bus.peek(self.S as u16);
         //println!("-->pop {:#X}", value);
+        self.S += 1;
         value
     }
 
@@ -109,11 +106,19 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn set_V(&mut self, val: bool) {
-        self.P.set_bit(5, val);
+        self.P.set_bit(6, val);
     }
 
     fn get_V(&self) -> bool {
-        self.P.get_bit(5)
+        self.P.get_bit(6)
+    }
+
+    fn set_D(&mut self, val: bool) {
+        self.P.set_bit(3, val);
+    }
+
+    fn get_D(&self) -> bool {
+        self.P.get_bit(3)
     }
 
    
@@ -152,7 +157,7 @@ impl<T: AddressSpace> Cpu<T> {
             },
             _ => format!("{:?}", operation.instruction)
         };
-
+        
         self.log.write_all(format!("{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n", inst_PC, op_text , self.A, self.X, self.Y, self.P, self.S).as_bytes());
 
         let extra_cycles = match operation.instruction {
@@ -213,6 +218,8 @@ impl<T: AddressSpace> Cpu<T> {
             Instruction::TXS => self.TXS(&operand),
             Instruction::TYA => self.TYA(&operand),
         };
+
+        //println!("Error: {:#X}", self.bus.peek(0x0002));
 
         //Add extra cycles to the op length if the executing the instruction caused it
         if let Some(cycles) = extra_cycles {
@@ -299,11 +306,12 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Address { location } => self.bus.peek(location.clone()),
             _ => 0,
         };
+        let old_c = self.get_C() as u8;
         let old_n = self.A.get_bit(7);
-        self.set_C(self.A as u16 + val as u16 > 255);
-        self.A = self.A.wrapping_add(val);
+        self.set_C(self.A.checked_add(val + old_c) == None);
+        self.A = self.A.wrapping_add(val + old_c);
         self.set_N(self.A.get_bit(7));
-        self.set_V(old_n != self.get_N());
+        self.set_V(old_n == val.get_bit(7) && old_n != self.A.get_bit(7));
         self.set_Z(self.A == 0);
         None
     }
@@ -353,12 +361,26 @@ impl<T: AddressSpace> Cpu<T> {
         }
     }
 
+    //11100100 nes
+    //10100100 mine
+
     fn BIT(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        let val = self.bus.peek(addr);
+        self.set_N(val.get_bit(7));
+        self.set_V(val.get_bit(6));
+        self.set_Z(val & self.A == 0);
+        None
     }
 
     fn BMI(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if self.get_N() {
+            self.PC = addr;
+            Some(2)
+        } else {
+            None
+        }
     }
 
     fn BNE(&mut self, operand: &Operand) -> Option<u8> {
@@ -391,11 +413,19 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BVC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if !self.get_V() {
+            self.PC = addr;
+        };
+        None
     }
 
     fn BVS(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let addr = unpack_address(operand);
+        if self.get_V() {
+            self.PC = addr;
+        };
+        None
     }
 
     fn CLC(&mut self, operand: &Operand) -> Option<u8> {
@@ -404,7 +434,8 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn CLD(&mut self, operand: &Operand) -> Option<u8> {
-        None //Decimal mode is disable on the nes cpu
+        self.set_D(false);
+        None
     }
 
     fn CLI(&mut self, operand: &Operand) -> Option<u8> {
@@ -425,7 +456,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::None => 0
         };
         self.set_C(value <= self.A);
-        self.set_N((self.A - value).get_bit(7));
+        self.set_N((self.A.wrapping_sub(value)).get_bit(7));
         self.set_Z(value == self.A);
         None
     }
@@ -438,7 +469,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::None => 0
         };
         self.set_C(value <= self.X);
-        self.set_N((self.X - value).get_bit(7));
+        self.set_N((self.X.wrapping_sub(value)).get_bit(7));
         self.set_Z(value == self.X);
         None
     }
@@ -451,7 +482,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::None => 0
         };
         self.set_C(value <= self.Y);
-        self.set_N((self.Y - value).get_bit(7));
+        self.set_N((self.Y.wrapping_sub(value)).get_bit(7));
         self.set_Z(value == self.Y);
         None
     }
@@ -604,7 +635,7 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn PHP(&mut self, operand: &Operand) -> Option<u8> {
-        self.push(self.P);
+        self.push(self.P | 0x10);
         Some(1)
     }
 
@@ -616,6 +647,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn PLP(&mut self, operand: &Operand) -> Option<u8> {
         self.P = self.pop();
+        self.P.set_bit(4, false);
+        self.P.set_bit(5, true);
         Some(2)
     }
 
@@ -658,7 +691,19 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn SBC(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        let val = match operand {
+            Operand::Constant { value } => {value.clone()},
+            Operand::Address { location } => self.bus.peek(location.clone()),
+            _ => 0,
+        };
+        let carry = !self.get_C() as u8;
+        let old_n = !self.A.get_bit(7);
+        self.set_C(self.A.checked_sub(val.wrapping_add(carry)) != None);
+        self.A = self.A.wrapping_sub(val.wrapping_add(carry));
+        self.set_N(self.A.get_bit(7));
+        self.set_V(old_n == val.get_bit(7) && old_n == self.A.get_bit(7));
+        self.set_Z(self.A == 0);
+        None
     }
 
     fn SEC(&mut self, operand: &Operand) -> Option<u8> {
@@ -667,7 +712,8 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn SED(&mut self, operand: &Operand) -> Option<u8> {
-        None //Nes does not implement decimal mode
+        self.set_D(true);
+        None
     }
 
     fn SEI(&mut self, operand: &Operand) -> Option<u8> {

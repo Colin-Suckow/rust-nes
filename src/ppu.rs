@@ -5,7 +5,7 @@ pub struct DummyPPU;
 //Returns 128 on all reads to simulate vblank
 impl AddressSpace for DummyPPU {
     fn peek(&self, ptr: u16) -> u8 {
-        println!("PPU READ!");
+        
         128
     }
 
