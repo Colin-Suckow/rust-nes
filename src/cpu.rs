@@ -233,7 +233,7 @@ impl<T: AddressSpace> Cpu<T> {
         if let Some(cycles) = extra_cycles {
             self.operation_progress += cycles;
         };
-        println!("{:#X}", self.bus.peek(0x0400));
+        //println!("{:#X}", self.bus.peek(0x0400));
       
     }
     //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
@@ -253,16 +253,23 @@ impl<T: AddressSpace> Cpu<T> {
             AddressingMode::ZeroPage => Operand::Address {
                 location: zero_page_address(operation.data[0]),
             },
-            AddressingMode::Indirect => Operand::Address {
-                location: u16::from_le_bytes([operation.data[0], operation.data[1]]).wrapping_add(self.PC),
+            AddressingMode::Indirect => {
+                let addr_location = u16::from_le_bytes([operation.data[0], operation.data[1]]);
+                let byte1 = self.bus.peek(addr_location);
+                let byte2 = match addr_location.to_le_bytes() {
+                    [0xFF, hbyte] => self.bus.peek(u16::from_le_bytes([self.bus.peek(0x00), hbyte])),
+                    _ => self.bus.peek(addr_location + 1),
+                };
+                Operand::Address {
+                    location: u16::from_le_bytes([byte1, byte2]),
+                }
             },
             AddressingMode::AbsoluteX => Operand::Address {
                 location: u16::from_le_bytes([operation.data[0], operation.data[1]])
                     + self.X as u16,
             },
             AddressingMode::AbsoluteY => Operand::Address {
-                location: u16::from_le_bytes([operation.data[0], operation.data[1]])
-                    + self.Y as u16,
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]]).wrapping_add(self.Y as u16),
             },
 
             AddressingMode::ZeroPageX => Operand::Address {
@@ -282,17 +289,19 @@ impl<T: AddressSpace> Cpu<T> {
                 Operand::Address {
                     location: u16::from_le_bytes([byte1, byte2]),
                 }
-            }
+            },
 
             AddressingMode::IndirectY => {
-                let address = self.bus.peek(operation.data[0] as u16);
-                let byte1 = self.bus.peek(address as u16);
-                let byte2 = match address {
+                let addressLocation = operation.data[0];
+                let byte1 = self.bus.peek(addressLocation as u16);
+                let byte2 = match addressLocation {
                     0xFF => self.bus.peek(0),
-                    _ => self.bus.peek((address + 1) as u16),
+                    _ => self.bus.peek((addressLocation + 1) as u16),
                 };
+                let address = u16::from_le_bytes([byte1, byte2]);
+                
                 Operand::Address {
-                    location: u16::from_le_bytes([byte1, byte2]) + self.Y as u16,
+                    location: address.wrapping_add(self.Y as u16),
                 }
             }
         }

@@ -191,7 +191,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x30
     oc(BMI, Relative),
     //0x31
-    oc(AND, IndirectX),
+    oc(AND, IndirectY),
     //0x32
     None,
     //0x33
