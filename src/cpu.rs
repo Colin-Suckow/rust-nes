@@ -20,7 +20,7 @@ pub struct Cpu<T: AddressSpace> {
     X: u8,   //Index X
     Y: u8,   //Index Y
     operation_progress: u8,
-    log: std::fs::File,
+    //log: std::fs::File,
 }
 
 impl<T: AddressSpace> Cpu<T> {
@@ -34,12 +34,12 @@ impl<T: AddressSpace> Cpu<T> {
             X: 0,
             Y: 0,
             operation_progress: 0,
-            log: std::fs::File::create("mytest.log").unwrap(),
+            //log: std::fs::File::create("mytest.log").unwrap(),
         }
     }
 
     pub fn reset(&mut self) {
-        self.PC = 0xC000; //self.bus.peek_16(0xFFFC);
+        self.PC = self.bus.peek_16(0xFFFC); //0xC000 for nestest
         self.P = 0x24;
     }
 
@@ -160,13 +160,14 @@ impl<T: AddressSpace> Cpu<T> {
             _ => format!("{:?}", operation.instruction),
         };
 
-        self.log.write_all(
-            format!(
-                "{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n",
-                inst_PC, op_text, self.A, self.X, self.Y, self.P, self.S
-            )
-            .as_bytes(),
-        );
+        //Logging formatting
+        // self.log.write_all(
+        //     format!(
+        //         "{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n",
+        //         inst_PC, op_text, self.A, self.X, self.Y, self.P, self.S
+        //     )
+        //     .as_bytes(),
+        // );
 
         let extra_cycles = match operation.instruction {
             Instruction::ADC => self.ADC(&operand),

@@ -66,9 +66,6 @@ impl Bus {
 
 impl AddressSpace for Bus {
     fn peek(&self, ptr: u16) -> u8 {
-        if ptr == 0x4016 {
-            println!("============= CONTROLLER READ");
-        };
         return match ptr {
             0x0000..=0x07FF => self.ram.peek(ptr),
             0x2000..=0x2007 => self.ppu.peek(ptr),
