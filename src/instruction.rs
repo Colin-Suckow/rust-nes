@@ -10,12 +10,12 @@ pub enum AddressingMode {
     Immediate,
     Implied,
     Indirect,
-    IndirectX,
-    IndirectY,
+    IndirectX, //Also known as Indexed Indirect
+    IndirectY, //Also known as Indirect Indexed
     Relative,
     ZeroPage,
-    ZeroPageX, //Also known as Indexed Indirect
-    ZeroPageY, //Also known as Indirect Indexed
+    ZeroPageX, 
+    ZeroPageY, 
 }
 
 
@@ -95,7 +95,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x00
     oc(BRK, Implied),
     //0x01
-    oc(ORA, Indirect),
+    oc(ORA, IndirectX),
     //0x02
     None,
     //0x03
@@ -351,7 +351,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x80
     None,
     //0x81
-    oc(STA, Indirect),
+    oc(STA, IndirectX),
     //0x82
     None,
     //0x83

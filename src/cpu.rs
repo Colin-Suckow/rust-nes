@@ -14,7 +14,7 @@ pub struct Cpu<T: AddressSpace> {
     bus: T,
     //Registers
     PC: u16, //Program counter
-    S: u8,  //Stack pointer
+    S: u8,   //Stack pointer
     P: u8,   //Processor status
     A: u8,   //Accumulator
     X: u8,   //Index X
@@ -23,13 +23,12 @@ pub struct Cpu<T: AddressSpace> {
     log: std::fs::File,
 }
 
-
 impl<T: AddressSpace> Cpu<T> {
     pub fn new(bus: T) -> Cpu<T> {
         Cpu {
             bus: bus,
             PC: 0,
-            S: 0x00FD,
+            S: 0x0FD,
             P: 0x24,
             A: 0,
             X: 0,
@@ -40,21 +39,20 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     pub fn reset(&mut self) {
-        self.PC = 0xC000;//self.bus.peek_16(0xFFFC);
+        self.PC = 0xC000; //self.bus.peek_16(0xFFFC);
         self.P = 0x24;
     }
 
     fn push(&mut self, value: u8) {
-        println!("-->push {:#X}", value);
+        //println!("-->push {:#X}", value);
+        self.bus.poke(self.S as u16 + 0x100, value);
         self.S -= 1;
-        self.bus.poke(self.S as u16, value);
-        
     }
 
     fn pop(&mut self) -> u8 {
-        let value = self.bus.peek(self.S as u16);
-        //println!("-->pop {:#X}", value);
         self.S += 1;
+        let value = self.bus.peek(self.S as u16 + 0x100);
+        //println!("-->pop {:#X}", value);
         value
     }
 
@@ -121,8 +119,6 @@ impl<T: AddressSpace> Cpu<T> {
         self.P.get_bit(3)
     }
 
-   
-
     pub fn step_cycle(&mut self) {
         //skip cycle if instruction is still in progress
         if self.operation_progress > 0 {
@@ -140,25 +136,37 @@ impl<T: AddressSpace> Cpu<T> {
         let operand = self.fetch_operand(&operation);
 
         let operand_value = match &operand {
-            Operand::Constant { value } => {value.clone() as u16}
-            Operand::Address { location } => {location.clone()}
-            Operand::Accumulator => {self.A.clone() as u16}
-            Operand::None => 0
+            Operand::Constant { value } => value.clone() as u16,
+            Operand::Address { location } => location.clone(),
+            Operand::Accumulator => self.A.clone() as u16,
+            Operand::None => 0,
         };
 
         let op_text = match &operand {
-            Operand::Constant { value } => format!("{:?} #${:02X}", operation.instruction, value.clone()),
-            Operand::Address { location } => {
-                match &operation.addressing_mode {
-                    AddressingMode::Relative | AddressingMode::Absolute => format!("{:?} ${:04X}",operation.instruction, location.clone()),
-                    _ => format!("{:?} ${:02X} = {:02X}",operation.instruction, location.clone(), self.bus.peek(location.clone()))
+            Operand::Constant { value } => {
+                format!("{:?} #${:02X}", operation.instruction, value.clone())
+            }
+            Operand::Address { location } => match &operation.addressing_mode {
+                AddressingMode::Relative | AddressingMode::Absolute => {
+                    format!("{:?} ${:04X}", operation.instruction, location.clone())
                 }
-                
+                _ => format!(
+                    "{:?} ${:02X} = {:02X}",
+                    operation.instruction,
+                    location.clone(),
+                    self.bus.peek(location.clone())
+                ),
             },
-            _ => format!("{:?}", operation.instruction)
+            _ => format!("{:?}", operation.instruction),
         };
-        
-        self.log.write_all(format!("{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n", inst_PC, op_text , self.A, self.X, self.Y, self.P, self.S).as_bytes());
+
+        self.log.write_all(
+            format!(
+                "{:04X} {:31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}\n",
+                inst_PC, op_text, self.A, self.X, self.Y, self.P, self.S
+            )
+            .as_bytes(),
+        );
 
         let extra_cycles = match operation.instruction {
             Instruction::ADC => self.ADC(&operand),
@@ -225,6 +233,8 @@ impl<T: AddressSpace> Cpu<T> {
         if let Some(cycles) = extra_cycles {
             self.operation_progress += cycles;
         };
+        println!("{:#X}", self.bus.peek(0x0400));
+      
     }
     //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
     pub fn fetch_operand(&self, operation: &Operation) -> Operand {
@@ -244,7 +254,7 @@ impl<T: AddressSpace> Cpu<T> {
                 location: zero_page_address(operation.data[0]),
             },
             AddressingMode::Indirect => Operand::Address {
-                location: u16::from_le_bytes([operation.data[0], operation.data[1]]) + self.PC,
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]]).wrapping_add(self.PC),
             },
             AddressingMode::AbsoluteX => Operand::Address {
                 location: u16::from_le_bytes([operation.data[0], operation.data[1]])
@@ -264,15 +274,25 @@ impl<T: AddressSpace> Cpu<T> {
 
             AddressingMode::IndirectX => {
                 let addressLocation = operation.data[0].wrapping_add(self.X);
+                let byte1 = self.bus.peek(addressLocation as u16);
+                let byte2 = match addressLocation {
+                    0xFF => self.bus.peek(0),
+                    _ => self.bus.peek((addressLocation + 1) as u16),
+                };
                 Operand::Address {
-                    location: self.bus.peek_16(addressLocation as u16),
+                    location: u16::from_le_bytes([byte1, byte2]),
                 }
             }
 
             AddressingMode::IndirectY => {
-                let address = self.bus.peek(operation.data[0] as u16) + self.Y;
+                let address = self.bus.peek(operation.data[0] as u16);
+                let byte1 = self.bus.peek(address as u16);
+                let byte2 = match address {
+                    0xFF => self.bus.peek(0),
+                    _ => self.bus.peek((address + 1) as u16),
+                };
                 Operand::Address {
-                    location: self.bus.peek_16(address as u16),
+                    location: u16::from_le_bytes([byte1, byte2]) + self.Y as u16,
                 }
             }
         }
@@ -289,6 +309,7 @@ impl<T: AddressSpace> Cpu<T> {
             AddressingMode::AbsoluteY => 2,
             AddressingMode::Indirect => 2,
             AddressingMode::Implied => 0,
+            AddressingMode::Accumulator => 0,
             _ => 1,
         };
         for i in (0..extra_bytes) {
@@ -302,7 +323,7 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn ADC(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
-            Operand::Constant { value } => {value.clone()},
+            Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()),
             _ => 0,
         };
@@ -320,7 +341,7 @@ impl<T: AddressSpace> Cpu<T> {
         let op = match operand {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()).clone(),
-            _ => 0
+            _ => 0,
         };
         self.A = self.A & op;
         self.set_standard_flags(&self.A.clone());
@@ -328,7 +349,28 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn ASL(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => {
+                let val = self.bus.peek(location.clone());
+                let shifted_val = val << 1;
+                self.set_C(val.get_bit(7));
+                self.set_N(shifted_val.get_bit(7));
+                self.set_Z(shifted_val == 0);
+                self.bus.poke(location.clone(), shifted_val);
+            }
+            Operand::Accumulator => {
+                let val = self.A;
+                let shifted_val = val << 1;
+                self.set_C(val.get_bit(7));
+                self.set_N(shifted_val.get_bit(7));
+                self.set_Z(shifted_val == 0);
+                self.A = shifted_val;
+                //self.PC -= 1;
+            }
+            _ => (),
+        }
+        
+        None
     }
 
     fn BCC(&mut self, operand: &Operand) -> Option<u8> {
@@ -453,7 +495,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()),
             Operand::Accumulator => self.A.clone(),
-            Operand::None => 0
+            Operand::None => 0,
         };
         self.set_C(value <= self.A);
         self.set_N((self.A.wrapping_sub(value)).get_bit(7));
@@ -466,7 +508,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()),
             Operand::Accumulator => self.A.clone(),
-            Operand::None => 0
+            Operand::None => 0,
         };
         self.set_C(value <= self.X);
         self.set_N((self.X.wrapping_sub(value)).get_bit(7));
@@ -479,7 +521,7 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()),
             Operand::Accumulator => self.A.clone(),
-            Operand::None => 0
+            Operand::None => 0,
         };
         self.set_C(value <= self.Y);
         self.set_N((self.Y.wrapping_sub(value)).get_bit(7));
@@ -512,7 +554,7 @@ impl<T: AddressSpace> Cpu<T> {
         let op = match operand {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()).clone(),
-            _ => 0
+            _ => 0,
         };
         self.A = self.A ^ op;
         self.set_standard_flags(&self.A.clone());
@@ -554,9 +596,9 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn LDA(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => {self.A = value.clone()}
-            Operand::Address { location } => {self.A = self.bus.peek(location.clone())}
-            _ => ()
+            Operand::Constant { value } => self.A = value.clone(),
+            Operand::Address { location } => self.A = self.bus.peek(location.clone()),
+            _ => (),
         };
         self.set_N(self.A.get_bit(7));
         self.set_Z(self.A == 0);
@@ -600,7 +642,7 @@ impl<T: AddressSpace> Cpu<T> {
                 self.set_N(false);
                 self.set_Z(shifted_val == 0);
                 self.bus.poke(location.clone(), shifted_val);
-            },
+            }
             Operand::Accumulator => {
                 let val = self.A;
                 let shifted_val = val >> 1;
@@ -608,9 +650,11 @@ impl<T: AddressSpace> Cpu<T> {
                 self.set_N(false);
                 self.set_Z(shifted_val == 0);
                 self.A = shifted_val;
+                //self.PC -= 1;
             }
-            _ => ()
+            _ => (),
         }
+        
         None
     }
 
@@ -622,7 +666,7 @@ impl<T: AddressSpace> Cpu<T> {
         let op = match operand {
             Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()).clone(),
-            _ => 0
+            _ => 0,
         };
         self.A = self.A | op;
         self.set_standard_flags(&self.A.clone());
@@ -653,7 +697,29 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn ROL(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        match operand {
+            Operand::Address { location } => {
+                let val = self.bus.peek(location.clone());
+                let mut rotated_val = val << 1;
+                rotated_val.set_bit(0, self.get_C());
+                self.set_C(val.get_bit(7));
+                self.set_N(rotated_val.get_bit(7));
+                self.set_Z(rotated_val == 0);
+                self.bus.poke(location.clone(), rotated_val);
+            }
+            Operand::Accumulator => {
+                let val = self.A;
+                let mut rotated_val = val << 1;
+                rotated_val.set_bit(0, self.get_C());
+                self.set_C(val.get_bit(7));
+                self.set_N(rotated_val.get_bit(7));
+                self.set_Z(rotated_val == 0);
+                self.A = rotated_val;
+                //self.PC -= 1;
+            }
+            _ => (),
+        }
+        None
     }
 
     fn ROR(&mut self, operand: &Operand) -> Option<u8> {
@@ -663,26 +729,32 @@ impl<T: AddressSpace> Cpu<T> {
                 let mut rotated_val = val >> 1;
                 rotated_val.set_bit(7, self.get_C());
                 self.set_C(val.get_bit(0));
-                self.set_N(false);
+                self.set_N(rotated_val.get_bit(7));
                 self.set_Z(rotated_val == 0);
                 self.bus.poke(location.clone(), rotated_val);
-            },
+            }
             Operand::Accumulator => {
                 let val = self.A;
                 let mut rotated_val = val >> 1;
                 rotated_val.set_bit(7, self.get_C());
                 self.set_C(val.get_bit(0));
-                self.set_N(false);
+                self.set_N(rotated_val.get_bit(7));
                 self.set_Z(rotated_val == 0);
                 self.A = rotated_val;
+                //self.PC -= 1;
             }
-            _ => ()
+            _ => (),
         }
+        
         None
     }
 
     fn RTI(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+        self.P = self.pop();
+        self.PC = self.pop_16();
+        self.P.set_bit(4, false);
+        self.P.set_bit(5, true);
+        None
     }
 
     fn RTS(&mut self, operand: &Operand) -> Option<u8> {
@@ -692,7 +764,7 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn SBC(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
-            Operand::Constant { value } => {value.clone()},
+            Operand::Constant { value } => value.clone(),
             Operand::Address { location } => self.bus.peek(location.clone()),
             _ => 0,
         };

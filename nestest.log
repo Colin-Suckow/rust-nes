@@ -799,7 +799,7 @@ CDA3 BNE $CDA8                       A:00 X:00 Y:99 P:27 SP:FB
 CDA5 JMP $CDAC                       A:00 X:00 Y:99 P:27 SP:FB
 CDAC NOP                             A:00 X:00 Y:99 P:27 SP:FB
 CDAD TSX                             A:00 X:00 Y:99 P:27 SP:FB
-CDAE STX $07FF = 00                  A:00 X:FB Y:99 P:A5 SP:FB
+CDAE STX $07FF                       A:00 X:FB Y:99 P:A5 SP:FB
 CDB1 LDY #$33                        A:00 X:FB Y:99 P:A5 SP:FB
 CDB3 LDX #$69                        A:00 X:FB Y:33 P:25 SP:FB
 CDB5 LDA #$84                        A:00 X:69 Y:33 P:25 SP:FB
@@ -833,14 +833,14 @@ CDE6 BNE $CDEF                       A:04 X:69 Y:01 P:27 SP:69
 CDE8 CPY #$01                        A:04 X:69 Y:01 P:27 SP:69
 CDEA BNE $CDEF                       A:04 X:69 Y:01 P:27 SP:69
 CDEC JMP $CDF3                       A:04 X:69 Y:01 P:27 SP:69
-CDF3 LDX $07FF = FB                  A:04 X:69 Y:01 P:27 SP:69
+CDF3 LDX $07FF                       A:04 X:69 Y:01 P:27 SP:69
 CDF6 TXS                             A:04 X:FB Y:01 P:A5 SP:69
 CDF7 RTS                             A:04 X:FB Y:01 P:A5 SP:FB
 C609 JSR $CDF8                       A:04 X:FB Y:01 P:A5 SP:FD
 CDF8 LDA #$FF                        A:04 X:FB Y:01 P:A5 SP:FB
 CDFA STA $01 = FF                    A:FF X:FB Y:01 P:A5 SP:FB
 CDFC TSX                             A:FF X:FB Y:01 P:A5 SP:FB
-CDFD STX $07FF = FB                  A:FF X:FB Y:01 P:A5 SP:FB
+CDFD STX $07FF                       A:FF X:FB Y:01 P:A5 SP:FB
 CE00 NOP                             A:FF X:FB Y:01 P:A5 SP:FB
 CE01 LDX #$80                        A:FF X:FB Y:01 P:A5 SP:FB
 CE03 TXS                             A:FF X:80 Y:01 P:A5 SP:FB
@@ -860,10 +860,10 @@ CE17 BNE $CE2F                       A:33 X:7E Y:01 P:27 SP:80
 CE19 TSX                             A:33 X:7E Y:01 P:27 SP:80
 CE1A CPX #$80                        A:33 X:80 Y:01 P:A5 SP:80
 CE1C BNE $CE2F                       A:33 X:80 Y:01 P:27 SP:80
-CE1E LDA $0180 = 33                  A:33 X:80 Y:01 P:27 SP:80
+CE1E LDA $0180                       A:33 X:80 Y:01 P:27 SP:80
 CE21 CMP #$33                        A:33 X:80 Y:01 P:25 SP:80
 CE23 BNE $CE2F                       A:33 X:80 Y:01 P:27 SP:80
-CE25 LDA $017F = 69                  A:33 X:80 Y:01 P:27 SP:80
+CE25 LDA $017F                       A:33 X:80 Y:01 P:27 SP:80
 CE28 CMP #$69                        A:69 X:80 Y:01 P:25 SP:80
 CE2A BNE $CE2F                       A:69 X:80 Y:01 P:27 SP:80
 CE2C JMP $CE33                       A:69 X:80 Y:01 P:27 SP:80
@@ -961,7 +961,7 @@ CEDC BNE $CEE5                       A:55 X:99 Y:88 P:27 SP:80
 CEDE CPX #$99                        A:55 X:99 Y:88 P:27 SP:80
 CEE0 BNE $CEE5                       A:55 X:99 Y:88 P:27 SP:80
 CEE2 JMP $CEE9                       A:55 X:99 Y:88 P:27 SP:80
-CEE9 LDX $07FF = FB                  A:55 X:99 Y:88 P:27 SP:80
+CEE9 LDX $07FF                       A:55 X:99 Y:88 P:27 SP:80
 CEEC TXS                             A:55 X:FB Y:88 P:A5 SP:80
 CEED RTS                             A:55 X:FB Y:88 P:A5 SP:FB
 C60C JSR $CEEE                       A:55 X:FB Y:88 P:A5 SP:FD
@@ -973,7 +973,7 @@ CEF6 NOP                             A:FF X:55 Y:69 P:A5 SP:FB
 CEF7 BIT $01 = FF                    A:FF X:55 Y:69 P:A5 SP:FB
 CEF9 SEC                             A:FF X:55 Y:69 P:E5 SP:FB
 CEFA LDA #$01                        A:FF X:55 Y:69 P:E5 SP:FB
-CEFC LSR A                           A:01 X:55 Y:69 P:65 SP:FB
+CEFC LSR                             A:01 X:55 Y:69 P:65 SP:FB
 CEFD BCC $CF1C                       A:00 X:55 Y:69 P:67 SP:FB
 CEFF BNE $CF1C                       A:00 X:55 Y:69 P:67 SP:FB
 CF01 BMI $CF1C                       A:00 X:55 Y:69 P:67 SP:FB
@@ -982,7 +982,7 @@ CF05 CMP #$00                        A:00 X:55 Y:69 P:67 SP:FB
 CF07 BNE $CF1C                       A:00 X:55 Y:69 P:67 SP:FB
 CF09 CLV                             A:00 X:55 Y:69 P:67 SP:FB
 CF0A LDA #$AA                        A:00 X:55 Y:69 P:27 SP:FB
-CF0C LSR A                           A:AA X:55 Y:69 P:A5 SP:FB
+CF0C LSR                             A:AA X:55 Y:69 P:A5 SP:FB
 CF0D BCS $CF1C                       A:55 X:55 Y:69 P:24 SP:FB
 CF0F BEQ $CF1C                       A:55 X:55 Y:69 P:24 SP:FB
 CF11 BMI $CF1C                       A:55 X:55 Y:69 P:24 SP:FB
@@ -994,7 +994,7 @@ CF20 NOP                             A:55 X:55 Y:69 P:27 SP:FB
 CF21 BIT $01 = FF                    A:55 X:55 Y:69 P:27 SP:FB
 CF23 SEC                             A:55 X:55 Y:69 P:E5 SP:FB
 CF24 LDA #$80                        A:55 X:55 Y:69 P:E5 SP:FB
-CF26 ASL A                           A:80 X:55 Y:69 P:E5 SP:FB
+CF26 ASL                             A:80 X:55 Y:69 P:E5 SP:FB
 CF27 BCC $CF47                       A:00 X:55 Y:69 P:67 SP:FB
 CF29 BNE $CF47                       A:00 X:55 Y:69 P:67 SP:FB
 CF2B BMI $CF47                       A:00 X:55 Y:69 P:67 SP:FB
@@ -1004,7 +1004,7 @@ CF31 BNE $CF47                       A:00 X:55 Y:69 P:67 SP:FB
 CF33 CLV                             A:00 X:55 Y:69 P:67 SP:FB
 CF34 SEC                             A:00 X:55 Y:69 P:27 SP:FB
 CF35 LDA #$55                        A:00 X:55 Y:69 P:27 SP:FB
-CF37 ASL A                           A:55 X:55 Y:69 P:25 SP:FB
+CF37 ASL                             A:55 X:55 Y:69 P:25 SP:FB
 CF38 BCS $CF47                       A:AA X:55 Y:69 P:A4 SP:FB
 CF3A BEQ $CF47                       A:AA X:55 Y:69 P:A4 SP:FB
 CF3C BPL $CF47                       A:AA X:55 Y:69 P:A4 SP:FB
@@ -1016,7 +1016,7 @@ CF4B NOP                             A:AA X:55 Y:69 P:27 SP:FB
 CF4C BIT $01 = FF                    A:AA X:55 Y:69 P:27 SP:FB
 CF4E SEC                             A:AA X:55 Y:69 P:E5 SP:FB
 CF4F LDA #$01                        A:AA X:55 Y:69 P:E5 SP:FB
-CF51 ROR A                           A:01 X:55 Y:69 P:65 SP:FB
+CF51 ROR                             A:01 X:55 Y:69 P:65 SP:FB
 CF52 BCC $CF72                       A:80 X:55 Y:69 P:E5 SP:FB
 CF54 BEQ $CF72                       A:80 X:55 Y:69 P:E5 SP:FB
 CF56 BPL $CF72                       A:80 X:55 Y:69 P:E5 SP:FB
@@ -1026,7 +1026,7 @@ CF5C BNE $CF72                       A:80 X:55 Y:69 P:67 SP:FB
 CF5E CLV                             A:80 X:55 Y:69 P:67 SP:FB
 CF5F CLC                             A:80 X:55 Y:69 P:27 SP:FB
 CF60 LDA #$55                        A:80 X:55 Y:69 P:26 SP:FB
-CF62 ROR A                           A:55 X:55 Y:69 P:24 SP:FB
+CF62 ROR                             A:55 X:55 Y:69 P:24 SP:FB
 CF63 BCC $CF72                       A:2A X:55 Y:69 P:25 SP:FB
 CF65 BEQ $CF72                       A:2A X:55 Y:69 P:25 SP:FB
 CF67 BMI $CF72                       A:2A X:55 Y:69 P:25 SP:FB
@@ -1038,7 +1038,7 @@ CF76 NOP                             A:2A X:55 Y:69 P:27 SP:FB
 CF77 BIT $01 = FF                    A:2A X:55 Y:69 P:27 SP:FB
 CF79 SEC                             A:2A X:55 Y:69 P:E5 SP:FB
 CF7A LDA #$80                        A:2A X:55 Y:69 P:E5 SP:FB
-CF7C ROL A                           A:80 X:55 Y:69 P:E5 SP:FB
+CF7C ROL                             A:80 X:55 Y:69 P:E5 SP:FB
 CF7D BCC $CF9D                       A:01 X:55 Y:69 P:65 SP:FB
 CF7F BEQ $CF9D                       A:01 X:55 Y:69 P:65 SP:FB
 CF81 BMI $CF9D                       A:01 X:55 Y:69 P:65 SP:FB
@@ -1048,7 +1048,7 @@ CF87 BNE $CF9D                       A:01 X:55 Y:69 P:67 SP:FB
 CF89 CLV                             A:01 X:55 Y:69 P:67 SP:FB
 CF8A CLC                             A:01 X:55 Y:69 P:27 SP:FB
 CF8B LDA #$55                        A:01 X:55 Y:69 P:26 SP:FB
-CF8D ROL A                           A:55 X:55 Y:69 P:24 SP:FB
+CF8D ROL                             A:55 X:55 Y:69 P:24 SP:FB
 CF8E BCS $CF9D                       A:AA X:55 Y:69 P:A4 SP:FB
 CF90 BEQ $CF9D                       A:AA X:55 Y:69 P:A4 SP:FB
 CF92 BPL $CF9D                       A:AA X:55 Y:69 P:A4 SP:FB
@@ -1059,7 +1059,7 @@ CF9A JMP $CFA1                       A:AA X:55 Y:69 P:27 SP:FB
 CFA1 RTS                             A:AA X:55 Y:69 P:27 SP:FB
 C60F JSR $CFA2                       A:AA X:55 Y:69 P:27 SP:FD
 CFA2 LDA $00 = 00                    A:AA X:55 Y:69 P:27 SP:FB
-CFA4 STA $07FF = FB                  A:00 X:55 Y:69 P:27 SP:FB
+CFA4 STA $07FF                       A:00 X:55 Y:69 P:27 SP:FB
 CFA7 LDA #$00                        A:00 X:55 Y:69 P:27 SP:FB
 CFA9 STA $80 = 00                    A:00 X:55 Y:69 P:27 SP:FB
 CFAB LDA #$02                        A:00 X:55 Y:69 P:27 SP:FB
@@ -1076,20 +1076,20 @@ CFBF STA $FF = 00                    A:00 X:55 Y:69 P:27 SP:FB
 CFC1 LDA #$04                        A:00 X:55 Y:69 P:27 SP:FB
 CFC3 STA $00 = 00                    A:04 X:55 Y:69 P:25 SP:FB
 CFC5 LDA #$5A                        A:04 X:55 Y:69 P:25 SP:FB
-CFC7 STA $0200 = 00                  A:5A X:55 Y:69 P:25 SP:FB
+CFC7 STA $0200                       A:5A X:55 Y:69 P:25 SP:FB
 CFCA LDA #$5B                        A:5A X:55 Y:69 P:25 SP:FB
-CFCC STA $0300 = 00                  A:5B X:55 Y:69 P:25 SP:FB
+CFCC STA $0300                       A:5B X:55 Y:69 P:25 SP:FB
 CFCF LDA #$5C                        A:5B X:55 Y:69 P:25 SP:FB
-CFD1 STA $0303 = 00                  A:5C X:55 Y:69 P:25 SP:FB
+CFD1 STA $0303                       A:5C X:55 Y:69 P:25 SP:FB
 CFD4 LDA #$5D                        A:5C X:55 Y:69 P:25 SP:FB
-CFD6 STA $0400 = 00                  A:5D X:55 Y:69 P:25 SP:FB
+CFD6 STA $0400                       A:5D X:55 Y:69 P:25 SP:FB
 CFD9 LDX #$00                        A:5D X:55 Y:69 P:25 SP:FB
-CFDB LDA ($80,X) @ 80 = 0200 = 5A    A:5D X:00 Y:69 P:27 SP:FB
+CFDB LDA $200 = 5A                   A:5D X:00 Y:69 P:27 SP:FB
 CFDD CMP #$5A                        A:5A X:00 Y:69 P:25 SP:FB
 CFDF BNE $D000                       A:5A X:00 Y:69 P:27 SP:FB
 CFE1 INX                             A:5A X:00 Y:69 P:27 SP:FB
 CFE2 INX                             A:5A X:01 Y:69 P:25 SP:FB
-CFE3 LDA ($80,X) @ 82 = 0300 = 5B    A:5A X:02 Y:69 P:25 SP:FB
+CFE3 LDA $300 = 5B                   A:5A X:02 Y:69 P:25 SP:FB
 CFE5 CMP #$5B                        A:5B X:02 Y:69 P:25 SP:FB
 CFE7 BNE $D000                       A:5B X:02 Y:69 P:27 SP:FB
 CFE9 INX                             A:5B X:02 Y:69 P:27 SP:FB
