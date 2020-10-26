@@ -9,8 +9,8 @@ pub enum MirrorMode {
 
 pub struct Cartridge {
     pub trainer_present: bool,
-    pub prg_rom_data: Vec<u8>,
-    pub chr_rom_data: Vec<u8>,
+    pub prg_rom_data: Option<Vec<u8>>,
+    pub chr_rom_data: Option<Vec<u8>>,
     pub mirror_mode: MirrorMode,
     pub mapper: u32,
 }
@@ -41,26 +41,42 @@ impl Cartridge {
 
         Cartridge {
             trainer_present: trainer_present,
-            prg_rom_data: data[prg_start..prg_end].to_vec(),
-            chr_rom_data: data[chr_start..chr_end].to_vec(),
+            prg_rom_data: Some(data[prg_start..prg_end].to_vec()),
+            chr_rom_data: Some(data[chr_start..chr_end].to_vec()),
             mirror_mode: char_mirror,
             mapper: mapper as u32,
         }
     }
 
-    pub fn printStats(&self) {
-        println!("Mapper: {}", self.mapper);
-        println!("Character Mirroring: {:?}", self.mirror_mode);
-        println!("Program ROM size: {} bytes", self.prg_rom_data.len());
-        println!("Character ROM size: {} bytes", self.chr_rom_data.len());
+    pub fn take_program_data(&mut self) -> ProgramData {
+        ProgramData {
+            data: self.prg_rom_data.take().unwrap(),
+        }
     }
+
+    pub fn take_character_data(&mut self) -> CharacterData {
+        CharacterData {
+            data: self.chr_rom_data.take().unwrap(),
+        }
+    }
+
+    // pub fn printStats(&self) {
+    //     println!("Mapper: {}", self.mapper);
+    //     println!("Character Mirroring: {:?}", self.mirror_mode);
+    //     println!("Program ROM size: {} bytes", self.prg_rom_data.unwrap().len());
+    //     println!("Character ROM size: {} bytes", self.chr_rom_data.unwrap().len());
+    // }
 }
 
-impl memory::AddressSpace for Cartridge {
+pub struct ProgramData {
+    data: Vec<u8>
+}
+
+impl memory::AddressSpace for ProgramData {
     fn peek(&self, ptr: u16) -> u8 {
         match ptr {
-            0x8000..=0xBFFF => self.prg_rom_data[((ptr - 0x8000) as usize)],
-            0xC000..=0xFFFF => self.prg_rom_data[((ptr - 0xC000) as usize)],
+            0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
+            0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
             _ => 0xFF
         }
         
@@ -68,10 +84,25 @@ impl memory::AddressSpace for Cartridge {
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
-            0x8000..=0xBFFF => self.prg_rom_data[((ptr - 0x8000) as usize)] = byte,
-            0xC000..=0xFFFF => self.prg_rom_data[((ptr - 0xC000) as usize)] = byte,
+            0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)] = byte,
+            0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)] = byte,
             _ => ()
         };
+    }
+}
+
+pub struct CharacterData {
+    data: Vec<u8>
+}
+
+impl memory::AddressSpace for CharacterData {
+    fn peek(&self, ptr: u16) -> u8 {
+        self.data[ptr as usize]
+        
+    }
+
+    fn poke(&mut self, ptr: u16, byte: u8) {
+        self.data[ptr as usize] = byte
     }
 }
 

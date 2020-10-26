@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 clap = "2.33.0"
 bit_field = "0.10.1"
+minifb = "0.19.1"

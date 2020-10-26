@@ -11,7 +11,7 @@ pub enum Operand {
 
 //http://nesdev.com/6502_cpu.txt
 pub struct Cpu<T: AddressSpace> {
-    bus: T,
+    pub bus: T,
     //Registers
     PC: u16, //Program counter
     S: u8,   //Stack pointer

@@ -37,8 +37,8 @@ impl AddressSpace for Ram {
 
 pub struct Bus {
     pub ram: Ram,
-    pub cartridge: cartridge::Cartridge,
-    pub ppu: ppu::DummyPPU,
+    pub cartridge: cartridge::ProgramData,
+    pub ppu: ppu::PPU,
 }
 
 impl Bus {

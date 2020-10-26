@@ -5,6 +5,8 @@ extern crate clap;
 use clap::{App, Arg};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use minifb::{Key, Window, WindowOptions, Menu, MenuItem};
+
 mod cartridge;
 mod cpu;
 mod instruction;
@@ -39,38 +41,47 @@ fn main() {
 
     println!("Recived argument {}", rom_path);
 
-    let rom = cartridge::Cartridge::load(rom_path);
+    let mut rom = cartridge::Cartridge::load(rom_path);
 
-    rom.printStats();
+    //rom.printStats();
+    
+    let mut ppu = crate::ppu::PPU::new(rom.take_character_data());
 
     let mut bus = memory::Bus {
         ram: memory::Ram::new(),
-        cartridge: rom,
-        ppu: crate::ppu::DummyPPU,
+        cartridge: rom.take_program_data(),
+        ppu: ppu,
     };
+
+    
 
     bus.write_mem();
 
     let mut cpu = Cpu::new(bus);
 
-    // for i in (0..255) {
-    //     let op = crate::instruction::OPCODES[i].clone();
-    //     print!("Address: {:#X} OP: ", i);
-    //     match op {
-    //         Some(o) => println!("{:?}", o.instruction),
-    //         None => println!("None"),
-    //     };
-    // }
+  
 
     cpu.reset();
 
-    let mut start = SystemTime::now();
+    let mut menu = Menu::new("test").unwrap();
+    menu.add_item("testItem", 1);
 
-    loop {
-        //start = SystemTime::now();
+    let mut window = Window::new(
+        "NES emulator",
+        crate::ppu::DISPLAY_WIDTH * 3,
+        crate::ppu::DISPLAY_HEIGHT * 3,
+        WindowOptions::default()
+    ).unwrap();
+
+    window.add_menu(&menu);
+
+    let mut start = SystemTime::now();
+    while window.is_open() && !window.is_key_down(Key::Escape) {
         cpu.step_cycle();
-        //let end_time = SystemTime::now();
-        //println!("{:?}mhz", ((1.0 / end_time.duration_since(start).unwrap().as_secs_f64()) / 1000000.0).round());
+        cpu.bus.ppu.step_cycle();
+
+        window.update_with_buffer(cpu.bus.ppu.get_buffer(), crate::ppu::DISPLAY_WIDTH, crate::ppu::DISPLAY_HEIGHT).unwrap();
     }
+
     
 }
