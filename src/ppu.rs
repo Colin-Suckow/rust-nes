@@ -46,7 +46,7 @@ impl PPU {
             PPUDATA: 0,
             OAMDMA: 0,
             addr_latch: false,
-            ppuaddr_address: 0
+            ppuaddr_address: 0,
         }
     }
 
@@ -78,22 +78,22 @@ impl PPU {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
-            let col = (self.x.clone() / 32) as u8;
-            let row = (self.y.clone() / 30) as u8;
-            let addr = ((col | (row << 4)) as u16) + 0x2000;
+            let col = (self.x.clone() / 8) as u8;
+            let row = (self.y.clone() / 8) as u8;
+            let addr = (row.saturating_mul(32).saturating_add(col)) as u16 + 0x2000;
 
             let tile_val = self.peek_vram(addr);
             let tcol = tile_val & 0xF;
             let trow = tile_val >> 4;
 
-            let val = self.get_pixel_value(half, tcol as i32, trow as i32, (self.x % 7) as i32, (self.y % 7) as i32);
+            let val = self.get_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
             let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let mx = self.x.clone();
             let my = self.y.clone();
             self.get_inactive_buffer_mut()[((my * DISPLAY_WIDTH as u16) + mx) as usize] = color;
         }
 
-        
+
 
         if self.y == 240 && self.x == 0 {
             self.swap_buffer(); 
@@ -130,7 +130,10 @@ impl PPU {
     }
 
     fn poke_vram(&mut self, ptr:u16, byte: u8) {
-        self.vram[ptr as usize] = byte;
+        match ptr {
+            0x2000..=0x2FFF => self.vram[(ptr - 0x2000) as usize] = byte,
+            _ => (),
+        }
     }
 
     fn peek_vram(&self, ptr: u16) -> u8 {
@@ -231,9 +234,13 @@ impl AddressSpace for PPU {
             0x2006 => {
                 //PPUADDR
                 self.ppuaddr_address = match self.addr_latch {
-                    false => byte as u16,
-                    true => self.ppuaddr_address | ((byte as u16) << 8)
+                    false => {
+                        self.addr_latch = true;
+                        byte as u16
+                    },
+                    true => self.ppuaddr_address << 8 | (byte as u16)
                 };
+                println!("{:#X} {:#X}", byte, self.ppuaddr_address);
             },
             0x2007 => {
                 //PPUDATA
