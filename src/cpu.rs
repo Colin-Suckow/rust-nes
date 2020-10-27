@@ -349,7 +349,7 @@ impl<T: AddressSpace> Cpu<T> {
         };
         let old_c = self.get_C() as u8;
         let old_n = self.A.get_bit(7);
-        self.set_C(self.A.checked_add(val.wrapping_add(old_c)) == None);
+        self.set_C(self.A.checked_add(val.saturating_add(old_c)) == None);
         self.A = self.A.wrapping_add(val.wrapping_add(old_c));
         self.set_N(self.A.get_bit(7));
         self.set_V(old_n == val.get_bit(7) && old_n != self.A.get_bit(7));

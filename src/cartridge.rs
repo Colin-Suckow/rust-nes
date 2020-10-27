@@ -61,12 +61,20 @@ impl Cartridge {
         }
     }
 
-    // pub fn printStats(&self) {
-    //     println!("Mapper: {}", self.mapper);
-    //     println!("Character Mirroring: {:?}", self.mirror_mode);
-    //     println!("Program ROM size: {} bytes", self.prg_rom_data.unwrap().len());
-    //     println!("Character ROM size: {} bytes", self.chr_rom_data.unwrap().len());
-    // }
+    pub fn printStats(&self) {
+
+        println!("Mapper: {}", self.mapper);
+        println!("Character Mirroring: {:?}", self.mirror_mode);
+        match &self.prg_rom_data {
+            Some(d) => println!("Program ROM size: {} bytes", d.len()),
+            None => println!("Unable to read program rom data. Already taken"),
+        };
+
+        match &self.chr_rom_data {
+            Some(d) => println!("Character ROM size: {} bytes", d.len()),
+            None => println!("Unable to read character rom data. Already taken"),
+        };
+    }
 }
 
 pub struct ProgramData {
@@ -78,7 +86,7 @@ impl memory::AddressSpace for ProgramData {
         match ptr {
             0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
             0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
-            _ => 0xFF
+            _ => 0x00
         }
         
     }

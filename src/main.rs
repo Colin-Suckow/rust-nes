@@ -43,7 +43,7 @@ fn main() {
 
     let mut rom = cartridge::Cartridge::load(rom_path);
 
-    //rom.printStats();
+    rom.printStats();
     
     let mut ppu = crate::ppu::PPU::new(rom.take_character_data());
 

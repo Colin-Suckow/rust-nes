@@ -70,7 +70,7 @@ impl PPU {
 
             let col = (self.x / 8) as u16;
             let row = (self.y / 8) as u16;
-            let addr = (row * 32 + col) as u16 + offset;
+            let addr = ((row * 32) + col) as u16 + offset;
 
             let tile_val = self.peek_vram(addr);
             let tcol = tile_val & 0xF;
@@ -84,9 +84,9 @@ impl PPU {
                 3 => 0x0000FFFF,
                 _ => 0,
             };
-            let mx = self.x.clone();
-            let my = self.y.clone();
-            self.buffer[((my * DISPLAY_WIDTH as u16) + mx) as usize] = color;
+            let mx = self.x.clone() as usize;
+            let my = self.y.clone() as usize;
+            self.buffer[((my * DISPLAY_WIDTH) + mx)] = color;
         }
 
     }
@@ -171,7 +171,7 @@ impl PPU {
             self.x += 1;
         };
 
-        if self.y >= 262 {
+        if self.y >= 261 {
             self.y = 0;
         };
 
