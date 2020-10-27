@@ -119,6 +119,13 @@ impl<T: AddressSpace> Cpu<T> {
         self.P.get_bit(3)
     }
 
+    pub fn fire_nmi(&mut self) {
+        let addr = self.bus.peek_16(0xFFFA);
+        self.push_16(self.PC);
+        self.push(self.P);
+        self.PC = addr;
+    }
+
     pub fn step_cycle(&mut self) {
         //skip cycle if instruction is still in progress
         if self.operation_progress > 0 {
@@ -238,7 +245,7 @@ impl<T: AddressSpace> Cpu<T> {
       
     }
     //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
-    pub fn fetch_operand(&self, operation: &Operation) -> Operand {
+    pub fn fetch_operand(&mut self, operation: &Operation) -> Operand {
         match operation.addressing_mode {
             AddressingMode::Accumulator => Operand::Accumulator,
             AddressingMode::Immediate => Operand::Constant {
@@ -258,7 +265,10 @@ impl<T: AddressSpace> Cpu<T> {
                 let addr_location = u16::from_le_bytes([operation.data[0], operation.data[1]]);
                 let byte1 = self.bus.peek(addr_location);
                 let byte2 = match addr_location.to_le_bytes() {
-                    [0xFF, hbyte] => self.bus.peek(u16::from_le_bytes([self.bus.peek(0x00), hbyte])),
+                    [0xFF, hbyte] => {
+                        let lbyte = self.bus.peek(0x00);
+                        self.bus.peek(u16::from_le_bytes([lbyte, hbyte]))
+                    },
                     _ => self.bus.peek(addr_location + 1),
                 };
                 Operand::Address {
@@ -339,8 +349,8 @@ impl<T: AddressSpace> Cpu<T> {
         };
         let old_c = self.get_C() as u8;
         let old_n = self.A.get_bit(7);
-        self.set_C(self.A.checked_add(val + old_c) == None);
-        self.A = self.A.wrapping_add(val + old_c);
+        self.set_C(self.A.checked_add(val.wrapping_add(old_c)) == None);
+        self.A = self.A.wrapping_add(val.wrapping_add(old_c));
         self.set_N(self.A.get_bit(7));
         self.set_V(old_n == val.get_bit(7) && old_n != self.A.get_bit(7));
         self.set_Z(self.A == 0);

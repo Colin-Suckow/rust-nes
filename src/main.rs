@@ -77,10 +77,20 @@ fn main() {
 
     let mut start = SystemTime::now();
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        cpu.bus.ppu.step_cycle();
         cpu.step_cycle();
+        
+        cpu.bus.ppu.step_cycle();
         cpu.bus.ppu.step_cycle();
 
-        window.update_with_buffer(cpu.bus.ppu.get_buffer(), crate::ppu::DISPLAY_WIDTH, crate::ppu::DISPLAY_HEIGHT).unwrap();
+        if cpu.bus.ppu.check_nmi() {
+            cpu.fire_nmi();
+        }
+
+        if cpu.bus.ppu.show_frame() {
+            window.update_with_buffer(cpu.bus.ppu.get_buffer(), crate::ppu::DISPLAY_WIDTH, crate::ppu::DISPLAY_HEIGHT).unwrap();
+        }
+        
     }
 
     

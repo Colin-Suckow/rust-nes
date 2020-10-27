@@ -4,9 +4,9 @@ use crate::cartridge;
 use crate::ppu;
 
 pub trait AddressSpace {
-    fn peek(&self, ptr: u16) -> u8;
+    fn peek(&mut self, ptr: u16) -> u8;
     fn poke(&mut self, ptr: u16, byte: u8);
-    fn peek_16(&self, ptr: u16) -> u16 {
+    fn peek_16(&mut self, ptr: u16) -> u16 {
         let byte1 = self.peek(ptr);
         let byte2 = self.peek(ptr + 1);
         u16::from_le_bytes([byte1, byte2])
@@ -26,7 +26,7 @@ impl Ram {
 }
 
 impl AddressSpace for Ram {
-    fn peek(&self, ptr: u16) -> u8 {
+    fn peek(&mut self, ptr: u16) -> u8 {
         self.data[ptr as usize]
     }
 
@@ -42,7 +42,7 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn debug_print_memory(&self) {
+    pub fn debug_print_memory(&mut self) {
         for address in 0..0xFFFF {
             let val = self.peek(address as u16);
             print!("{:#X} : {}, ", address, val);
@@ -52,7 +52,7 @@ impl Bus {
         }
     }
 
-    pub fn write_mem(&self) {
+    pub fn write_mem(&mut self) {
         let mut file = std::fs::File::create("mem.txt").unwrap();
         for address in 0..0x10000 {
             let val = self.peek(address as u16);
@@ -65,7 +65,7 @@ impl Bus {
 }
 
 impl AddressSpace for Bus {
-    fn peek(&self, ptr: u16) -> u8 {
+    fn peek(&mut self, ptr: u16) -> u8 {
         return match ptr {
             0x0000..=0x07FF => self.ram.peek(ptr),
             0x2000..=0x2007 => self.ppu.peek(ptr),
@@ -88,7 +88,7 @@ impl AddressSpace for Bus {
 pub struct TestBus;
 
 impl AddressSpace for TestBus {
-    fn peek(&self, ptr: u16) -> u8 {
+    fn peek(&mut self, ptr: u16) -> u8 {
         (ptr % 255) as u8
     }
 
@@ -128,13 +128,13 @@ mod tests {
     use super::*;
     #[test]
     fn test_testbus() {
-        let bus = TestBus;
+        let mut bus = TestBus;
         assert_eq!(bus.peek(256), 1 as u8);
     }
 
     #[test]
     fn test_testbus16() {
-        let bus = TestBus;
+        let mut bus = TestBus;
         assert_eq!(bus.peek_16(0x20), 0x2120);
     }
 

@@ -1,7 +1,7 @@
 use crate::memory;
 use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum MirrorMode {
     Vertical,
     Horizontal,
@@ -57,6 +57,7 @@ impl Cartridge {
     pub fn take_character_data(&mut self) -> CharacterData {
         CharacterData {
             data: self.chr_rom_data.take().unwrap(),
+            mirror: self.mirror_mode.clone(),
         }
     }
 
@@ -73,7 +74,7 @@ pub struct ProgramData {
 }
 
 impl memory::AddressSpace for ProgramData {
-    fn peek(&self, ptr: u16) -> u8 {
+    fn peek(&mut self, ptr: u16) -> u8 {
         match ptr {
             0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
             0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
@@ -92,11 +93,12 @@ impl memory::AddressSpace for ProgramData {
 }
 
 pub struct CharacterData {
-    data: Vec<u8>
+    data: Vec<u8>,
+    pub mirror: MirrorMode
 }
 
 impl memory::AddressSpace for CharacterData {
-    fn peek(&self, ptr: u16) -> u8 {
+    fn peek(&mut self, ptr: u16) -> u8 {
         self.data[ptr as usize]
         
     }
