@@ -1,4 +1,4 @@
-use crate::cartridge::CharacterData;
+use crate::cartridge::{CharacterData, MirrorMode};
 use crate::AddressSpace;
 use bit_field::BitField;
 
@@ -6,9 +6,7 @@ pub const DISPLAY_WIDTH: usize = 256;
 pub const DISPLAY_HEIGHT: usize = 240;
 
 pub struct PPU {
-    primary_buffer: Vec<u32>,
-    secondary_buffer: Vec<u32>,
-    primary_buffer_active: bool,
+    pub buffer: Vec<u32>,
     character_data: CharacterData,
     vram: Vec<u8>,
     x: u16,
@@ -29,9 +27,7 @@ pub struct PPU {
 impl PPU {
     pub fn new(character_rom: CharacterData) -> Self {
         Self {
-            primary_buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT],
-            secondary_buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT],
-            primary_buffer_active: true,
+            buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT],
             character_data: character_rom,
             vram: vec![0x00; 2048],
             x: 0,
@@ -50,23 +46,6 @@ impl PPU {
         }
     }
 
-    pub fn get_buffer(&self) -> &Vec<u32> {
-        match self.primary_buffer_active {
-            true => &self.primary_buffer,
-            false => &self.secondary_buffer,
-        }
-    }
-
-    pub fn get_inactive_buffer_mut(&mut self) -> &mut Vec<u32> {
-        match self.primary_buffer_active {
-            true => &mut self.secondary_buffer,
-            false => &mut self.primary_buffer,
-        }
-    }
-
-    fn swap_buffer(&mut self) {
-        self.primary_buffer_active = !self.primary_buffer_active;
-    }
 
     pub fn step_cycle(&mut self) {
         self.update_position();
@@ -78,9 +57,9 @@ impl PPU {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
-            let col = (self.x.clone() / 8) as u8;
-            let row = (self.y.clone() / 8) as u8;
-            let addr = (row.saturating_mul(32).saturating_add(col)) as u16 + 0x2000;
+            let col = (self.x / 8) as u16;
+            let row = (self.y / 8) as u16;
+            let addr = (row * 32 + col) as u16 + 0x2000;
 
             let tile_val = self.peek_vram(addr);
             let tcol = tile_val & 0xF;
@@ -90,14 +69,9 @@ impl PPU {
             let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let mx = self.x.clone();
             let my = self.y.clone();
-            self.get_inactive_buffer_mut()[((my * DISPLAY_WIDTH as u16) + mx) as usize] = color;
+            self.buffer[((my * DISPLAY_WIDTH as u16) + mx) as usize] = color;
         }
 
-
-
-        if self.y == 240 && self.x == 0 {
-            self.swap_buffer(); 
-        }
     }
 
     pub fn check_nmi(&self) -> bool {
@@ -112,32 +86,50 @@ impl PPU {
         self.y == 0 && self.x == 0
     }
 
-    fn peek_nametable(&mut self, ptr: u16) -> u8 {
-        self.character_data.peek(ptr)
-        //Handle mirroring later
-        // let mirror_ptr = match self.character_data.mirror {
-        //     crate::cartridge::MirrorMode::Vertical => {
-        //         match ptr {
-        //             0x2000..=
-        //         }
-        //     },
-        //     crate::cartridge::MirrorMode::Horizontal => {}
-        // }
-    }
-
-    fn poke_nametable(&mut self, ptr: u16, byte: u8) {
-        self.character_data.poke(ptr - 0x2000, byte);
-    }
-
     fn poke_vram(&mut self, ptr:u16, byte: u8) {
-        match ptr {
-            0x2000..=0x2FFF => self.vram[(ptr - 0x2000) as usize] = byte,
-            _ => (),
+        match self.character_data.mirror {
+            MirrorMode::Vertical => {
+                match ptr {
+                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                    0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                    _ => ()
+                }
+            }
+            MirrorMode::Horizontal => {
+                match ptr {
+                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                    0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                    _ => ()
+                }
+            }
         }
     }
 
     fn peek_vram(&self, ptr: u16) -> u8 {
-        self.vram[ptr as usize - 0x2000]
+        match self.character_data.mirror {
+            MirrorMode::Vertical => {
+                match ptr {
+                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
+                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
+                    0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
+                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize],
+                    _ => 0
+                }
+            }
+            MirrorMode::Horizontal => {
+                match ptr {
+                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
+                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
+                    0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
+                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
+                    _ => 0
+                }
+            }
+        }
     }
 
     fn check_vblank(&self) -> bool {
@@ -164,7 +156,7 @@ impl PPU {
             for c in 0..8 {
                 let val = self.get_pixel_value(TableHalf::Left, tile_column, tile_row, c, r);
                 let color = if val > 0 { 0xFFFFFFFF } else { 0 };
-                self.get_inactive_buffer_mut()
+                self.buffer
                     [(((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize] = color;
             }
         }
@@ -240,10 +232,11 @@ impl AddressSpace for PPU {
                     },
                     true => self.ppuaddr_address << 8 | (byte as u16)
                 };
-                println!("{:#X} {:#X}", byte, self.ppuaddr_address);
+                //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
             },
             0x2007 => {
                 //PPUDATA
+                //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
                 self.poke_vram(self.ppuaddr_address, byte);
                 self.ppuaddr_address += if self.PPUCTRL.get_bit(2) {32} else {1};
             },

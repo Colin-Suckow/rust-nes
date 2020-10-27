@@ -88,7 +88,7 @@ fn main() {
         }
 
         if cpu.bus.ppu.show_frame() {
-            window.update_with_buffer(cpu.bus.ppu.get_buffer(), crate::ppu::DISPLAY_WIDTH, crate::ppu::DISPLAY_HEIGHT).unwrap();
+            window.update_with_buffer(&cpu.bus.ppu.buffer, crate::ppu::DISPLAY_WIDTH, crate::ppu::DISPLAY_HEIGHT).unwrap();
         }
         
     }
