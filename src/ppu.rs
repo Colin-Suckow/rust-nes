@@ -22,6 +22,7 @@ pub struct PPU {
     OAMDMA: u8,
     addr_latch: bool,
     ppuaddr_address: u16,
+    nmi_fired: bool
 }
 
 impl PPU {
@@ -43,6 +44,7 @@ impl PPU {
             OAMDMA: 0,
             addr_latch: false,
             ppuaddr_address: 0,
+            nmi_fired: false,
         }
     }
 
@@ -57,16 +59,31 @@ impl PPU {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
+
+            let offset = match self.PPUCTRL & 0x3 {
+                0 => 0x2000,
+                1 => 0x2400,
+                2 => 0x2800,
+                3 => 0x2C00,
+                _ => 0,
+            };
+
             let col = (self.x / 8) as u16;
             let row = (self.y / 8) as u16;
-            let addr = (row * 32 + col) as u16 + 0x2000;
+            let addr = (row * 32 + col) as u16 + offset;
 
             let tile_val = self.peek_vram(addr);
             let tcol = tile_val & 0xF;
             let trow = tile_val >> 4;
 
             let val = self.get_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
-            let color = if val > 0 { 0xFFFFFFFF } else { 0 };
+            //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
+            let color = match val {
+                1 => 0xFF0000FF,
+                2 => 0x00FF00FF,
+                3 => 0x0000FFFF,
+                _ => 0,
+            };
             let mx = self.x.clone();
             let my = self.y.clone();
             self.buffer[((my * DISPLAY_WIDTH as u16) + mx) as usize] = color;
@@ -74,16 +91,26 @@ impl PPU {
 
     }
 
-    pub fn check_nmi(&self) -> bool {
-        self.PPUCTRL.get_bit(7) && self.x == 0 && self.y == 240
+    pub fn check_nmi(&mut self) -> bool {
+        if self.PPUCTRL.get_bit(7) && self.y == 240 && !self.nmi_fired {
+            self.nmi_fired = true;
+            true
+        } else {
+            false
+        }
     }
 
     fn update_status_register(&mut self) {
         self.PPUSTATUS.set_bit(7, self.check_vblank());
     }
 
-    pub fn show_frame(&self) -> bool {
-        self.y == 0 && self.x == 0
+    pub fn show_frame(&mut self) -> bool {
+        if self.y == 0  && self.nmi_fired {
+            self.nmi_fired = false;
+            true
+        } else {
+            false
+        }
     }
 
     fn poke_vram(&mut self, ptr:u16, byte: u8) {
