@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="d5995a5e-5944-48c0-9ba5-8b2bfdde5b93" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/controller.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cartridge.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cartridge.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cpu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cpu.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/memory.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/memory.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ppu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/ppu.rs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="3bzlt68d" />
+  </component>
+  <component name="ProjectId" id="1jRCv4VCkPR8lJV6UwQUBJWQzWi" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
+    <property name="settings.editor.selected.configurable" value="dynamic.analysis.tools.valgrind" />
+  </component>
+  <component name="RunManager" selected="Cargo.Run nestest.nes">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run balloonfight.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release -- -e $USER_HOME$/Games/emulation/nes/balloonfight.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run ctrltest4016.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run -- -e $USER_HOME$/Downloads/ctrltest4016.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run dk.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release -- -e $USER_HOME$/Games/emulation/nes/dk.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run iceclimber.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release -- -e $USER_HOME$/Games/emulation/nes/iceclimber.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run megaman2.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run -- -e $USER_HOME$/Games/emulation/nes/megaman2.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run nestest.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run -- -e $USER_HOME$/Downloads/nestest.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run oc.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run -- -e $USER_HOME$/Games/emulation/nes/oc.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run supermariobros.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release -- -e $USER_HOME$/Games/emulation/nes/supermariobros.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run testcart.nes" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --release -- -e $USER_HOME$/Games/emulation/nes/testcart.nes" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Cargo.Run dk.nes" />
+      <item itemvalue="Cargo.Run supermariobros.nes" />
+      <item itemvalue="Cargo.Run testcart.nes" />
+      <item itemvalue="Cargo.Run ctrltest4016.nes" />
+      <item itemvalue="Cargo.Run iceclimber.nes" />
+      <item itemvalue="Cargo.Run oc.nes" />
+      <item itemvalue="Cargo.Run balloonfight.nes" />
+      <item itemvalue="Cargo.Run megaman2.nes" />
+      <item itemvalue="Cargo.Run nestest.nes" />
+    </list>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+    <option name="version" value="2" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d5995a5e-5944-48c0-9ba5-8b2bfdde5b93" name="Default Changelist" comment="" />
+      <created>1603757745096</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1603757745096</updated>
+      <workItem from="1603757746473" duration="45000" />
+      <workItem from="1603758302337" duration="222000" />
+      <workItem from="1603758696416" duration="164000" />
+      <workItem from="1603758885258" duration="4535000" />
+      <workItem from="1603770927149" duration="63489000" />
+    </task>
+    <task id="LOCAL-00001" summary="Begin ppu nametable rendering">
+      <created>1603763702056</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1603763702056</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Render the right tiles correctly. Need to implement nametable mirroring, but its' late.">
+      <created>1603776120173</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1603776120173</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Legible main menu. Demo stage messed up after 8th tile.">
+      <created>1603815868852</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1603815868852</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Fix nmi miss">
+      <created>1603819429285</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1603819429285</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Fix ADC issue causing graphics problems">
+      <created>1603826414414</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1603826414414</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Fix SBC carry issue">
+      <created>1603826723897</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1603826723897</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Begin ppu nametable rendering" />
+    <MESSAGE value="Render the right tiles correctly. Need to implement nametable mirroring, but its' late." />
+    <MESSAGE value="Legible main menu. Demo stage messed up after 8th tile." />
+    <MESSAGE value="Fix nmi miss" />
+    <MESSAGE value="Fix ADC issue causing graphics problems" />
+    <MESSAGE value="Fix SBC carry issue" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix SBC carry issue" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="2650" y="314" width="1554" height="916" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1604014571868">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2650" y="314" width="1554" height="916" key="#com.intellij.execution.impl.EditConfigurationsDialog/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604014571868" />
+    <state x="2913" y="274" key="#com.intellij.ide.util.MemberChooser" timestamp="1603837892946">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2913" y="274" key="#com.intellij.ide.util.MemberChooser/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603837892946" />
+    <state x="2868" y="475" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1603908645162">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2868" y="475" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603908645162" />
+    <state x="2616" y="65" key="CommitChangelistDialog2" timestamp="1603826723849">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2616" y="65" key="CommitChangelistDialog2/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603826723849" />
+    <state x="2996" y="523" width="648" height="725" key="FileChooserDialogImpl" timestamp="1603758906005">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2996" y="523" width="648" height="725" key="FileChooserDialogImpl/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603758906005" />
+    <state width="2492" height="443" key="GridCell.Tab.0.bottom" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.0.bottom/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.0.center" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.0.center/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.0.left" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.0.left/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.0.right" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.0.right/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.1.bottom" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.1.bottom/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.1.center" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.1.center/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.1.left" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.1.left/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state width="2492" height="443" key="GridCell.Tab.1.right" timestamp="1604015382079">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state width="2492" height="443" key="GridCell.Tab.1.right/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1604015382079" />
+    <state x="2533" y="299" width="1404" height="1093" key="SettingsEditor" timestamp="1603909320244">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2533" y="299" width="1404" height="1093" key="SettingsEditor/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603909320244" />
+    <state x="2594" y="303" key="Vcs.Push.Dialog.v2" timestamp="1603826418391">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2594" y="303" key="Vcs.Push.Dialog.v2/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603826418391" />
+    <state x="2693" y="0" width="1009" height="1470" key="search.everywhere.popup" timestamp="1603850882424">
+      <screen x="1920" y="0" width="2560" height="1440" />
+    </state>
+    <state x="2693" y="0" width="1009" height="1470" key="search.everywhere.popup/1920.0.2560.1440/0.122.1920.1080@1920.0.2560.1440" timestamp="1603850882424" />
+  </component>
+</project>

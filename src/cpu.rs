@@ -20,7 +20,7 @@ pub struct Cpu<T: AddressSpace> {
     X: u8,   //Index X
     Y: u8,   //Index Y
     operation_progress: u8,
-    //log: std::fs::File,
+    log: std::fs::File,
 }
 
 impl<T: AddressSpace> Cpu<T> {
@@ -34,7 +34,7 @@ impl<T: AddressSpace> Cpu<T> {
             X: 0,
             Y: 0,
             operation_progress: 0,
-            //log: std::fs::File::create("mytest.log").unwrap(),
+            log: std::fs::File::create("mytest.log").unwrap(),
         }
     }
 
@@ -149,23 +149,23 @@ impl<T: AddressSpace> Cpu<T> {
             Operand::None => 0,
         };
 
-        let op_text = match &operand {
-            Operand::Constant { value } => {
-                format!("{:?} #${:02X}", operation.instruction, value.clone())
-            }
-            Operand::Address { location } => match &operation.addressing_mode {
-                AddressingMode::Relative | AddressingMode::Absolute => {
-                    format!("{:?} ${:04X}", operation.instruction, location.clone())
-                }
-                _ => format!(
-                    "{:?} ${:02X} = {:02X}",
-                    operation.instruction,
-                    location.clone(),
-                    self.bus.peek(location.clone())
-                ),
-            },
-            _ => format!("{:?}", operation.instruction),
-        };
+        // let op_text = match &operand {
+        //     Operand::Constant { value } => {
+        //         format!("{:?} #${:02X}", operation.instruction, value.clone())
+        //     }
+        //     Operand::Address { location } => match &operation.addressing_mode {
+        //         AddressingMode::Relative | AddressingMode::Absolute => {
+        //             format!("{:?} ${:04X}", operation.instruction, location.clone())
+        //         }
+        //         _ => format!(
+        //             "{:?} ${:02X} = {:02X}",
+        //             operation.instruction,
+        //             location.clone(),
+        //             self.bus.peek(location.clone())
+        //         ),
+        //     },
+        //     _ => format!("{:?}", operation.instruction),
+        // };
 
         //Logging formatting
         // self.log.write_all(
@@ -235,13 +235,12 @@ impl<T: AddressSpace> Cpu<T> {
             Instruction::TYA => self.TYA(&operand),
         };
 
-        //println!("Error: {:#X}", self.bus.peek(0x0002));
 
         //Add extra cycles to the op length if the executing the instruction caused it
         if let Some(cycles) = extra_cycles {
             self.operation_progress += cycles;
         };
-        //println!("{:#X}", self.bus.peek(0x0400));
+        //println!("{:#X}", self.bus.controller.status);
       
     }
     //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
@@ -322,7 +321,7 @@ impl<T: AddressSpace> Cpu<T> {
         let opcode_byte = self.bus.peek(self.PC);
         //println!("PC: {:#X} : {:#X}", self.PC, opcode_byte);
         self.PC += 1;
-        let mut operation = OPCODES[opcode_byte as usize].clone().unwrap();
+        let mut operation = OPCODES[opcode_byte as usize].clone().expect(&format!("Unknown opcode {:#X}", opcode_byte));
         let extra_bytes: u16 = match operation.addressing_mode {
             AddressingMode::Absolute => 2,
             AddressingMode::AbsoluteX => 2,
@@ -464,7 +463,7 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BRK(&mut self, operand: &Operand) -> Option<u8> {
-        todo!();
+
         self.PC += 1;
         self.set_I(true);
         self.set_B(true);
@@ -735,7 +734,6 @@ impl<T: AddressSpace> Cpu<T> {
                 self.set_N(rotated_val.get_bit(7));
                 self.set_Z(rotated_val == 0);
                 self.A = rotated_val;
-                //self.PC -= 1;
             }
             _ => (),
         }

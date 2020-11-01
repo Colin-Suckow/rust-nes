@@ -101,7 +101,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x03
     None,
     //0x04
-    None,
+    oc(NOP, ZeroPage), //Illegal
     //0x05
     oc(ORA, ZeroPage),
     //0x06
@@ -117,7 +117,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x0b
     None,
     //0x0c
-    None,
+    oc(NOP, Absolute),
     //0x0d
     oc(ORA, Absolute),
     //0x0e
@@ -133,7 +133,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x13
     None,
     //0x14
-    None,
+    oc(NOP, ZeroPageX),
     //0x15
     oc(ORA, ZeroPageX),
     //0x16
@@ -145,11 +145,11 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x19
     oc(ORA, AbsoluteY),
     //0x1a
-    None,
+    oc(NOP, Absolute),
     //0x1b
     None,
     //0x1c
-    None,
+    oc(NOP, AbsoluteX),
     //0x1d
     oc(ORA, AbsoluteX),
     //0x1e
@@ -197,7 +197,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x33
     None,
     //0x34
-    None,
+    oc(NOP, ZeroPageX),
     //0x35
     oc(AND, ZeroPageX),
     //0x36
@@ -213,7 +213,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x3b
     None,
     //0x3c
-    None,
+    oc(NOP, AbsoluteX),
     //0x3d
     oc(AND, AbsoluteX),
     //0x3e
@@ -229,7 +229,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x43
     None,
     //0x44
-    None,
+    oc(NOP, ZeroPage),
     //0x45
     oc(EOR, ZeroPage),
     //0x46
@@ -261,7 +261,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x53
     None,
     //0x54
-    None,
+    oc(NOP, ZeroPageX),
     //0x55
     oc(EOR, ZeroPageX),
     //0x56
@@ -277,7 +277,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x5b
     None,
     //0x5c
-    None,
+    oc(NOP, AbsoluteX),
     //0x5d
     oc(EOR, AbsoluteX),
     //0x5e
@@ -293,7 +293,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x63
     None,
     //0x64
-    None,
+    oc(NOP, ZeroPage),
     //0x65
     oc(ADC, ZeroPage),
     //0x66
@@ -325,7 +325,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x73
     None,
     //0x74
-    None,
+    oc(NOP, ZeroPageX),
     //0x75
     oc(ADC, ZeroPageX),
     //0x76
@@ -337,11 +337,11 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x79
     oc(ADC, AbsoluteY),
     //0x7a
-    None,
+    oc(NOP, Absolute),
     //0x7b
     None,
     //0x7c
-    None,
+    oc(NOP, AbsoluteX),
     //0x7d
     oc(ADC, AbsoluteX),
     //0x7e
@@ -349,7 +349,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0x7f
     None,
     //0x80
-    None,
+    oc(NOP, Immediate),
     //0x81
     oc(STA, IndirectX),
     //0x82
@@ -517,7 +517,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0xd3
     None,
     //0xd4
-    None,
+    oc(NOP, ZeroPageX),
     //0xd5
     oc(CMP, ZeroPageX),
     //0xd6
@@ -533,7 +533,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0xdb
     None,
     //0xdc
-    None,
+    oc(NOP, AbsoluteX),
     //0xdd
     oc(CMP, AbsoluteX),
     //0xde
@@ -581,7 +581,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0xf3
     None,
     //0xf4
-    None,
+    oc(NOP, ZeroPageX),
     //0xf5
     oc(SBC, ZeroPageX),
     //0xf6
@@ -597,7 +597,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
     //0xfb
     None,
     //0xfc
-    None,
+    oc(NOP, AbsoluteX),
     //0xfd
     oc(SBC, AbsoluteX),
     //0xfe

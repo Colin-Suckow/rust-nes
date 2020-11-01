@@ -6,7 +6,7 @@ pub const DISPLAY_WIDTH: usize = 256;
 pub const DISPLAY_HEIGHT: usize = 240;
 
 pub struct PPU {
-    pub buffer: Vec<u32>,
+    pub buffer: Vec<u8>,
     character_data: CharacterData,
     vram: Vec<u8>,
     x: u16,
@@ -22,13 +22,15 @@ pub struct PPU {
     OAMDMA: u8,
     addr_latch: bool,
     ppuaddr_address: u16,
-    nmi_fired: bool
+    nmi_fired: bool,
+    oam_mem: Vec<u8>,
+    sprites_to_render: Vec<usize>,
 }
 
 impl PPU {
     pub fn new(character_rom: CharacterData) -> Self {
         Self {
-            buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT],
+            buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT * 4],
             character_data: character_rom,
             vram: vec![0x00; 2048],
             x: 0,
@@ -45,6 +47,8 @@ impl PPU {
             addr_latch: false,
             ppuaddr_address: 0,
             nmi_fired: false,
+            oam_mem: vec![0; 256],
+            sprites_to_render: Vec::<usize>::new(),
         }
     }
 
@@ -59,6 +63,8 @@ impl PPU {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
+
+
 
             let offset = match self.PPUCTRL & 0x3 {
                 0 => 0x2000,
@@ -76,20 +82,30 @@ impl PPU {
             let tcol = tile_val & 0xF;
             let trow = tile_val >> 4;
 
-            let val = self.get_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
+            let val = self.get_background_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let color = match val {
-                1 => 0xFF0000FF,
-                2 => 0x00FF00FF,
-                3 => 0x0000FFFF,
-                _ => 0,
+                1 => [0xFF, 0x00, 0x00, 0xFF],
+                2 => [0x00, 0xFF, 0x00, 0xFF],
+                3 => [0x00, 0x00, 0xFF, 0xFF],
+                _ => [0x0, 0x0, 0x0, 0x00],
             };
             let mx = self.x.clone() as usize;
             let my = self.y.clone() as usize;
-            self.buffer[((my * DISPLAY_WIDTH) + mx)] = color;
+            self.set_pixel(mx, my, &color);
         }
 
     }
+
+    // fn update_sprites_to_render(&mut self) {
+    //     self.sprites_to_render.clear();
+    //     for (i, sprite) in self.oam_mem.chunks(4).enumerate() {
+    //         if sprite[0] >= y && sprite[0] < y+8 {
+    //             self.sprites_to_render.push(i)
+    //         }
+    //     }
+    // }
+
 
     pub fn check_nmi(&mut self) -> bool {
         if self.PPUCTRL.get_bit(7) && self.y == 240 && !self.nmi_fired {
@@ -107,6 +123,18 @@ impl PPU {
     pub fn show_frame(&mut self) -> bool {
         if self.y == 0  && self.nmi_fired {
             self.nmi_fired = false;
+
+            let half = match self.PPUCTRL.get_bit(3) {
+                true => TableHalf::Right,
+                false => TableHalf::Left,
+            };
+
+            for sprite in self.oam_mem.clone().chunks(4) {
+                let tcol = sprite[1] & 0xF;
+                let trow = sprite[1] >> 4;
+                self.draw_tile(half, sprite[3].clone() as i32, sprite[0].clone()  as i32,tcol.clone()  as i32, trow.clone()  as i32);
+            }
+
             true
         } else {
             false
@@ -178,18 +206,36 @@ impl PPU {
         //println!("X: {} Y:{}", self.x, self.y);
     }
 
-    fn draw_tile(&mut self, x: i32, y: i32, tile_column: i32, tile_row: i32) {
+    fn set_pixel(&mut self, x: usize, y: usize, color: &[u8]) {
+        let index = ((y * DISPLAY_WIDTH) + x) * 4;
+        // for i in 0..3 {
+        //     self.buffer[index + i] = color[0 + i];
+        // }
+        self.buffer[index] = color[0];
+        self.buffer[index + 1] = color[1];
+        self.buffer[index + 2] = color[2];
+        self.buffer[index + 3] = color[3];
+    }
+
+    fn draw_tile(&mut self, half: TableHalf, x: i32, y: i32, tile_column: i32, tile_row: i32) {
         for r in 0..8 {
             for c in 0..8 {
-                let val = self.get_pixel_value(TableHalf::Left, tile_column, tile_row, c, r);
-                let color = if val > 0 { 0xFFFFFFFF } else { 0 };
-                self.buffer
-                    [(((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize] = color;
+                let val = self.get_background_pixel_value(half.clone(), tile_column, tile_row, c, r);
+                let color = match val {
+                    1 => [0xFF, 0x00, 0x00, 0xFF],
+                    2 => [0x00, 0xFF, 0x00, 0xFF],
+                    3 => [0x00, 0x00, 0xFF, 0xFF],
+                    _ => [0x0, 0x0, 0x0, 0x00],
+                };
+                if ((((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize) < 61440 {
+                    self.set_pixel((c + x) as usize, (r + y) as usize, &color);
+                };
+
             }
         }
     }
 
-    fn get_pixel_value(
+    fn get_background_pixel_value(
         &mut self,
         table_half: TableHalf,
         tile_column: i32,
@@ -215,6 +261,11 @@ impl PPU {
         let upper_bit = upper_byte.get_bit(7 - column as usize) as u8;
         lower_bit | (upper_bit << 1)
     }
+
+    pub fn write_dma(&mut self, data: &[u8]) {
+        //self.oam_mem.clear();
+        self.oam_mem.copy_from_slice(data);
+    }
 }
 
 // fn apply_palette(value: u8) -> u32 {
@@ -234,7 +285,9 @@ impl AddressSpace for PPU {
                 self.PPUSTATUS
             },
             0x2003 => self.OAMADDR,
-            0x2004 => self.OAMDATA,
+            0x2004 => {
+                self.oam_mem[self.OAMADDR as usize]
+            },
             0x2005 => self.PPUSCROLL,
             0x2006 => self.PPUADDR,
             0x2007 => self.PPUDATA,
@@ -248,7 +301,11 @@ impl AddressSpace for PPU {
             0x2001 => self.PPUMASK = byte,
             0x2002 => self.PPUSTATUS = byte,
             0x2003 => self.OAMADDR = byte,
-            0x2004 => self.OAMDATA = byte,
+            0x2004 => {
+                //OAMDATA
+                self.oam_mem[self.OAMADDR as usize] = byte;
+                self.OAMADDR += 1;
+            },
             0x2005 => self.PPUSCROLL = byte,
             0x2006 => {
                 //PPUADDR
@@ -272,6 +329,7 @@ impl AddressSpace for PPU {
     }
 }
 
+#[derive(Clone, Copy)]
 enum TableHalf {
     Left,
     Right,

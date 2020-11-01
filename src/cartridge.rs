@@ -108,7 +108,7 @@ pub struct CharacterData {
 impl memory::AddressSpace for CharacterData {
     fn peek(&mut self, ptr: u16) -> u8 {
         self.data[ptr as usize]
-        
+
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
