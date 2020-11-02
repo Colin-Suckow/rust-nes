@@ -2,3 +2,5 @@
 **/*.rs.bk
 /.vscode
 mem.txt
+mytest.log
+/.idea
