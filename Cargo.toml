@@ -9,7 +9,8 @@ edition = "2018"
 [dependencies]
 clap = "2.33.0"
 bit_field = "0.10.1"
-#minifb = "0.19.1"
-winit = "0.23.0"
+minifb = "0.19.1"
+#beryllium = { version = "0.3.2", features = ["extern_crate_raw_window_handle"] }
+#sdl2 = "0.34.3"
 pixels = "0.2.0"
 winit_input_helper = "0.8.0"

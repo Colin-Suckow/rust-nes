@@ -1,6 +1,6 @@
 use crate::AddressSpace;
 use bit_field::BitField;
-use winit::event::{ElementState, VirtualKeyCode};
+
 
 pub struct Controller {
     pub state: u8,
@@ -17,40 +17,37 @@ impl Controller {
         }
     }
 
-    pub fn update(&mut self, keycode: &VirtualKeyCode, state: &ElementState) {
-        let pressed = match state {
-            ElementState::Pressed => true,
-            ElementState::Released => false,
-        };
+    // pub fn update(&mut self, keyinfo: &KeyInfo, state: bool) {
+     
 
-        match keycode {
-            VirtualKeyCode::W => {
-                self.state.set_bit(4, pressed);
-            }
-            VirtualKeyCode::A => {
-                self.state.set_bit(6, pressed);
-            }
-            VirtualKeyCode::S => {
-                self.state.set_bit(5, pressed);
-            }
-            VirtualKeyCode::D => {
-                self.state.set_bit(7, pressed);
-            }
-            VirtualKeyCode::Semicolon => {
-                self.state.set_bit(0, pressed);
-            }
-            VirtualKeyCode::Apostrophe => {
-                self.state.set_bit(1, pressed);
-            }
-            VirtualKeyCode::Return => {
-                self.state.set_bit(3, pressed);
-            }
-            VirtualKeyCode::RShift => {
-                self.state.set_bit(2, pressed);
-            }
-            _ => (),
-        };
-    }
+    //     match keyinfo.keycode {
+    //         Keycode::W => {
+    //             self.state.set_bit(4, state);
+    //         }
+    //         Keycode::A => {
+    //             self.state.set_bit(6, state);
+    //         }
+    //         Keycode::S => {
+    //             self.state.set_bit(5, state);
+    //         }
+    //         Keycode::D => {
+    //             self.state.set_bit(7, state);
+    //         }
+    //         Keycode::SEMICOLON => {
+    //             self.state.set_bit(0, state);
+    //         }
+    //         Keycode::QUOTE => {
+    //             self.state.set_bit(1, state);
+    //         }
+    //         Keycode::RETURN => {
+    //             self.state.set_bit(3, state);
+    //         }
+    //         Keycode::RSHIFT => {
+    //             self.state.set_bit(2, state);
+    //         }
+    //         _ => (),
+    //     };
+    // }
 }
 
 impl AddressSpace for Controller {

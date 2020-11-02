@@ -6,7 +6,7 @@ pub const DISPLAY_WIDTH: usize = 256;
 pub const DISPLAY_HEIGHT: usize = 240;
 
 pub struct PPU {
-    pub buffer: Vec<u8>,
+    pub buffer: Vec<u32>,
     character_data: CharacterData,
     vram: Vec<u8>,
     x: u16,
@@ -30,7 +30,7 @@ pub struct PPU {
 impl PPU {
     pub fn new(character_rom: CharacterData) -> Self {
         Self {
-            buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT * 4],
+            buffer: vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT],
             character_data: character_rom,
             vram: vec![0x00; 2048],
             x: 0,
@@ -84,15 +84,15 @@ impl PPU {
 
             let val = self.get_background_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
-            let color = match val {
-                1 => [0xFF, 0x00, 0x00, 0xFF],
-                2 => [0x00, 0xFF, 0x00, 0xFF],
-                3 => [0x00, 0x00, 0xFF, 0xFF],
-                _ => [0x0, 0x0, 0x0, 0x00],
+            let color: u32 = match val {
+                1 => 0xFF0000FF,
+                2 => 0x00FF00FF,
+                3 => 0x0000FFFF,
+                _ => 0x0,
             };
             let mx = self.x.clone() as usize;
             let my = self.y.clone() as usize;
-            self.set_pixel(mx, my, &color);
+            self.set_pixel(mx, my, color);
         }
 
     }
@@ -206,29 +206,26 @@ impl PPU {
         //println!("X: {} Y:{}", self.x, self.y);
     }
 
-    fn set_pixel(&mut self, x: usize, y: usize, color: &[u8]) {
-        let index = ((y * DISPLAY_WIDTH) + x) * 4;
+    fn set_pixel(&mut self, x: usize, y: usize, color: u32) {
+        let index = (y * DISPLAY_WIDTH) + x;
         // for i in 0..3 {
         //     self.buffer[index + i] = color[0 + i];
         // }
-        self.buffer[index] = color[0];
-        self.buffer[index + 1] = color[1];
-        self.buffer[index + 2] = color[2];
-        self.buffer[index + 3] = color[3];
+        self.buffer[index] = color;
     }
 
     fn draw_tile(&mut self, half: TableHalf, x: i32, y: i32, tile_column: i32, tile_row: i32) {
         for r in 0..8 {
             for c in 0..8 {
                 let val = self.get_background_pixel_value(half.clone(), tile_column, tile_row, c, r);
-                let color = match val {
-                    1 => [0xFF, 0x00, 0x00, 0xFF],
-                    2 => [0x00, 0xFF, 0x00, 0xFF],
-                    3 => [0x00, 0x00, 0xFF, 0xFF],
-                    _ => [0x0, 0x0, 0x0, 0x00],
+                let color: u32 = match val {
+                    1 => 0xFF0000FF,
+                    2 => 0x00FF00FF,
+                    3 => 0x0000FFFF,
+                    _ => 0x0,
                 };
                 if ((((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize) < 61440 {
-                    self.set_pixel((c + x) as usize, (r + y) as usize, &color);
+                    self.set_pixel((c + x) as usize, (r + y) as usize, color);
                 };
 
             }
