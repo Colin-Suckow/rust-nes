@@ -14,11 +14,9 @@ pub enum AddressingMode {
     IndirectY, //Also known as Indirect Indexed
     Relative,
     ZeroPage,
-    ZeroPageX, 
-    ZeroPageY, 
+    ZeroPageX,
+    ZeroPageY,
 }
-
-
 
 #[derive(Debug, Clone, Copy)]
 pub enum Instruction {
@@ -87,8 +85,6 @@ pub struct Operation {
     pub base_cycle_count: u8,
     pub data: Vec<u8>,
 }
-
-
 
 #[allow(dead_code)]
 pub static OPCODES: [Option<Operation>; 256] = [
@@ -607,11 +603,7 @@ pub static OPCODES: [Option<Operation>; 256] = [
 ];
 
 //Helper function to make opcode declarations easier
-const fn oc(
-    instruction: Instruction,
-    addressing_mode: AddressingMode,
-) -> Option<Operation> {
-
+const fn oc(instruction: Instruction, addressing_mode: AddressingMode) -> Option<Operation> {
     let base_cycle_count = match addressing_mode {
         ZeroPageX => 4,
         ZeroPageY => 4,
@@ -621,7 +613,6 @@ const fn oc(
         IndirectY => 5,
         _ => 2,
     };
-
 
     Some(Operation {
         instruction,

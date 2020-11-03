@@ -65,19 +65,15 @@ fn main() {
 
     cpu.reset();
 
-    // let mut window = Window::new(
-    //     "NES emulator",
-    //     crate::ppu::DISPLAY_WIDTH * 3,
-    //     crate::ppu::DISPLAY_HEIGHT * 3,
-    //     WindowOptions::default()
-    // ).unwrap();
-
     let mut window = Window::new(
-        "Test - ESC to exit",
+        "NES Emulator",
         DISPLAY_WIDTH * 3,
         DISPLAY_HEIGHT * 3,
         WindowOptions::default(),
-    ).unwrap();
+    )
+    .unwrap();
+
+    window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
     'game_loop: loop {
         if cpu.bus.ppu.check_nmi() {
@@ -89,16 +85,20 @@ fn main() {
         cpu.bus.ppu.step_cycle();
         cpu.bus.ppu.step_cycle();
         cpu.bus.ppu.step_cycle();
-        
 
         if cpu.bus.ppu.show_frame() {
             //Render frame
-            window.update_with_buffer(&cpu.bus.ppu.buffer, DISPLAY_WIDTH, DISPLAY_HEIGHT).unwrap();
+            window
+                .update_with_buffer(&cpu.bus.ppu.buffer, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+                .unwrap();
 
-            //Handle events
+            //Handle window close
             if !window.is_open() {
                 break 'game_loop;
             }
+
+            //Update controller state
+            cpu.bus.controller.update(&window.get_keys().unwrap());
         }
     }
 }

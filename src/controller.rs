@@ -1,6 +1,6 @@
 use crate::AddressSpace;
 use bit_field::BitField;
-
+use minifb::Key;
 
 pub struct Controller {
     pub state: u8,
@@ -17,37 +17,38 @@ impl Controller {
         }
     }
 
-    // pub fn update(&mut self, keyinfo: &KeyInfo, state: bool) {
-     
-
-    //     match keyinfo.keycode {
-    //         Keycode::W => {
-    //             self.state.set_bit(4, state);
-    //         }
-    //         Keycode::A => {
-    //             self.state.set_bit(6, state);
-    //         }
-    //         Keycode::S => {
-    //             self.state.set_bit(5, state);
-    //         }
-    //         Keycode::D => {
-    //             self.state.set_bit(7, state);
-    //         }
-    //         Keycode::SEMICOLON => {
-    //             self.state.set_bit(0, state);
-    //         }
-    //         Keycode::QUOTE => {
-    //             self.state.set_bit(1, state);
-    //         }
-    //         Keycode::RETURN => {
-    //             self.state.set_bit(3, state);
-    //         }
-    //         Keycode::RSHIFT => {
-    //             self.state.set_bit(2, state);
-    //         }
-    //         _ => (),
-    //     };
-    // }
+    pub fn update(&mut self, keys_down: &Vec<Key>) {
+        self.state = 0;
+        for key in keys_down {
+            match key {
+                Key::W => {
+                    self.state.set_bit(4, true);
+                }
+                Key::A => {
+                    self.state.set_bit(6, true);
+                }
+                Key::S => {
+                    self.state.set_bit(5, true);
+                }
+                Key::D => {
+                    self.state.set_bit(7, true);
+                }
+                Key::Semicolon => {
+                    self.state.set_bit(0, true);
+                }
+                Key::Apostrophe => {
+                    self.state.set_bit(1, true);
+                }
+                Key::Enter => {
+                    self.state.set_bit(3, true);
+                }
+                Key::RightShift => {
+                    self.state.set_bit(2, true);
+                }
+                _ => (),
+            };
+        }
+    }
 }
 
 impl AddressSpace for Controller {

@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use crate::{cartridge, controller};
 use crate::ppu;
+use crate::{cartridge, controller};
 
 pub trait AddressSpace {
     fn peek(&mut self, ptr: u16) -> u8;
@@ -27,7 +27,6 @@ impl Ram {
     pub fn get_dma_data(&self, start: u8) -> &[u8] {
         &self.data[(((start as u16) << 8) as usize)..((((start as u16) << 8) + 256) as usize)]
     }
-
 }
 
 impl AddressSpace for Ram {
@@ -62,7 +61,8 @@ impl Bus {
         let mut file = std::fs::File::create("mem.txt").unwrap();
         for address in 0..0x10000 {
             let val = self.peek(address as u16);
-            file.write_all(format!("{:#X} : {:#X}, ", address, val).as_bytes()).unwrap();
+            file.write_all(format!("{:#X} : {:#X}, ", address, val).as_bytes())
+                .unwrap();
             if address % 5 == 0 {
                 file.write_all("\n".as_bytes()).unwrap();
             }
@@ -74,7 +74,7 @@ impl AddressSpace for Bus {
     fn peek(&mut self, ptr: u16) -> u8 {
         return match ptr {
             0x4016 => self.controller.peek(ptr), //Controller port 1
-            0x4017 => 0, //Empty controller 2 hack
+            0x4017 => 0,                         //Empty controller 2 hack
             0x0000..=0x07FF => self.ram.peek(ptr),
             0x2000..=0x2007 => self.ppu.peek(ptr),
             0x4020..=0xFFFF => self.cartridge.peek(ptr),
@@ -84,9 +84,10 @@ impl AddressSpace for Bus {
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
-            0x4014 => { //OAM DMA
+            0x4014 => {
+                //OAM DMA
                 self.ppu.write_dma(self.ram.get_dma_data(byte));
-            },
+            }
             0x4016 => self.controller.poke(ptr, byte),
             0x0000..=0x07FF => self.ram.poke(ptr, byte),
             0x2000..=0x2007 => self.ppu.poke(ptr, byte),
@@ -108,8 +109,6 @@ impl AddressSpace for TestBus {
         ()
     }
 }
-
-
 
 pub fn relative_address(offset: u8, pc: u16) -> u16 {
     (offset as i8 as i32 + pc as i32) as u16

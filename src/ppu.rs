@@ -52,7 +52,6 @@ impl PPU {
         }
     }
 
-
     pub fn step_cycle(&mut self) {
         self.update_position();
 
@@ -63,8 +62,6 @@ impl PPU {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
-
-
 
             let offset = match self.PPUCTRL & 0x3 {
                 0 => 0x2000,
@@ -82,7 +79,13 @@ impl PPU {
             let tcol = tile_val & 0xF;
             let trow = tile_val >> 4;
 
-            let val = self.get_background_pixel_value(half, tcol as i32, trow as i32, (self.x % 8) as i32, (self.y % 8) as i32);
+            let val = self.get_background_pixel_value(
+                half,
+                tcol as i32,
+                trow as i32,
+                (self.x % 8) as i32,
+                (self.y % 8) as i32,
+            );
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let color: u32 = match val {
                 1 => 0xFF0000FF,
@@ -94,7 +97,6 @@ impl PPU {
             let my = self.y.clone() as usize;
             self.set_pixel(mx, my, color);
         }
-
     }
 
     // fn update_sprites_to_render(&mut self) {
@@ -105,7 +107,6 @@ impl PPU {
     //         }
     //     }
     // }
-
 
     pub fn check_nmi(&mut self) -> bool {
         if self.PPUCTRL.get_bit(7) && self.y == 240 && !self.nmi_fired {
@@ -121,7 +122,7 @@ impl PPU {
     }
 
     pub fn show_frame(&mut self) -> bool {
-        if self.y == 0  && self.nmi_fired {
+        if self.y == 0 && self.nmi_fired {
             self.nmi_fired = false;
 
             let half = match self.PPUCTRL.get_bit(3) {
@@ -132,7 +133,15 @@ impl PPU {
             for sprite in self.oam_mem.clone().chunks(4) {
                 let tcol = sprite[1] & 0xF;
                 let trow = sprite[1] >> 4;
-                self.draw_tile(half, sprite[3].clone() as i32, sprite[0].clone()  as i32,tcol.clone()  as i32, trow.clone()  as i32);
+                self.draw_tile(
+                    half,
+                    sprite[3].clone() as i32,
+                    sprite[0].clone() as i32,
+                    tcol.clone() as i32,
+                    trow.clone() as i32,
+                    sprite[2].get_bit(6),
+                    sprite[2].get_bit(7),
+                );
             }
 
             true
@@ -141,49 +150,41 @@ impl PPU {
         }
     }
 
-    fn poke_vram(&mut self, ptr:u16, byte: u8) {
+    fn poke_vram(&mut self, ptr: u16, byte: u8) {
         match self.character_data.mirror {
-            MirrorMode::Vertical => {
-                match ptr {
-                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                    0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
-                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize] = byte,
-                    _ => ()
-                }
-            }
-            MirrorMode::Horizontal => {
-                match ptr {
-                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                    0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
-                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
-                    _ => ()
-                }
-            }
+            MirrorMode::Vertical => match ptr {
+                0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                _ => (),
+            },
+            MirrorMode::Horizontal => match ptr {
+                0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                _ => (),
+            },
         }
     }
 
     fn peek_vram(&self, ptr: u16) -> u8 {
         match self.character_data.mirror {
-            MirrorMode::Vertical => {
-                match ptr {
-                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
-                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
-                    0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
-                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize],
-                    _ => 0
-                }
-            }
-            MirrorMode::Horizontal => {
-                match ptr {
-                    0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
-                    0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
-                    0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
-                    0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
-                    _ => 0
-                }
-            }
+            MirrorMode::Vertical => match ptr {
+                0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
+                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize],
+                _ => 0,
+            },
+            MirrorMode::Horizontal => match ptr {
+                0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
+                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
+                _ => 0,
+            },
         }
     }
 
@@ -214,10 +215,28 @@ impl PPU {
         self.buffer[index] = color;
     }
 
-    fn draw_tile(&mut self, half: TableHalf, x: i32, y: i32, tile_column: i32, tile_row: i32) {
+    fn draw_tile(
+        &mut self,
+        half: TableHalf,
+        x: i32,
+        y: i32,
+        tile_column: i32,
+        tile_row: i32,
+        mirror_h: bool,
+        mirror_v: bool,
+    ) {
         for r in 0..8 {
             for c in 0..8 {
-                let val = self.get_background_pixel_value(half.clone(), tile_column, tile_row, c, r);
+                let mut mr = r;
+                let mut mc = c;
+                if mirror_v {
+                    mr = 7 - r;
+                }
+                if mirror_h {
+                    mc = 7 - c;
+                }
+                let val =
+                    self.get_background_pixel_value(half.clone(), tile_column, tile_row, mc, mr);
                 let color: u32 = match val {
                     1 => 0xFF0000FF,
                     2 => 0x00FF00FF,
@@ -227,7 +246,6 @@ impl PPU {
                 if ((((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize) < 61440 {
                     self.set_pixel((c + x) as usize, (r + y) as usize, color);
                 };
-
             }
         }
     }
@@ -271,7 +289,6 @@ impl PPU {
 //     }
 // }
 
-
 impl AddressSpace for PPU {
     fn peek(&mut self, ptr: u16) -> u8 {
         match ptr {
@@ -280,11 +297,9 @@ impl AddressSpace for PPU {
             0x2002 => {
                 self.addr_latch = false;
                 self.PPUSTATUS
-            },
+            }
             0x2003 => self.OAMADDR,
-            0x2004 => {
-                self.oam_mem[self.OAMADDR as usize]
-            },
+            0x2004 => self.oam_mem[self.OAMADDR as usize],
             0x2005 => self.PPUSCROLL,
             0x2006 => self.PPUADDR,
             0x2007 => self.PPUDATA,
@@ -302,7 +317,7 @@ impl AddressSpace for PPU {
                 //OAMDATA
                 self.oam_mem[self.OAMADDR as usize] = byte;
                 self.OAMADDR += 1;
-            },
+            }
             0x2005 => self.PPUSCROLL = byte,
             0x2006 => {
                 //PPUADDR
@@ -310,17 +325,17 @@ impl AddressSpace for PPU {
                     false => {
                         self.addr_latch = true;
                         byte as u16
-                    },
-                    true => self.ppuaddr_address << 8 | (byte as u16)
+                    }
+                    true => self.ppuaddr_address << 8 | (byte as u16),
                 };
                 //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
-            },
+            }
             0x2007 => {
                 //PPUDATA
                 //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
                 self.poke_vram(self.ppuaddr_address, byte);
-                self.ppuaddr_address += if self.PPUCTRL.get_bit(2) {32} else {1};
-            },
+                self.ppuaddr_address += if self.PPUCTRL.get_bit(2) { 32 } else { 1 };
+            }
             _ => (),
         }
     }

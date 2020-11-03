@@ -62,7 +62,6 @@ impl Cartridge {
     }
 
     pub fn printStats(&self) {
-
         println!("Mapper: {}", self.mapper);
         println!("Character Mirroring: {:?}", self.mirror_mode);
         match &self.prg_rom_data {
@@ -78,7 +77,7 @@ impl Cartridge {
 }
 
 pub struct ProgramData {
-    data: Vec<u8>
+    data: Vec<u8>,
 }
 
 impl memory::AddressSpace for ProgramData {
@@ -86,29 +85,27 @@ impl memory::AddressSpace for ProgramData {
         match ptr {
             0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
             0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
-            _ => 0x00
+            _ => 0x00,
         }
-        
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
             0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)] = byte,
             0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)] = byte,
-            _ => ()
+            _ => (),
         };
     }
 }
 
 pub struct CharacterData {
     data: Vec<u8>,
-    pub mirror: MirrorMode
+    pub mirror: MirrorMode,
 }
 
 impl memory::AddressSpace for CharacterData {
     fn peek(&mut self, ptr: u16) -> u8 {
         self.data[ptr as usize]
-
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {

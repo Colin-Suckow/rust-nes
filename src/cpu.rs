@@ -2,6 +2,7 @@ use crate::instruction::{AddressingMode, Instruction, Operation, OPCODES};
 use crate::memory::*;
 use bit_field::BitField;
 use std::io::Write;
+
 pub enum Operand {
     Constant { value: u8 },
     Address { location: u16 },
@@ -235,13 +236,11 @@ impl<T: AddressSpace> Cpu<T> {
             Instruction::TYA => self.TYA(&operand),
         };
 
-
         //Add extra cycles to the op length if the executing the instruction caused it
         if let Some(cycles) = extra_cycles {
             self.operation_progress += cycles;
         };
         //println!("{:#X}", self.bus.controller.status);
-      
     }
     //(operation.data[0] / 255) as u16 != (self.PC / 255) as u16
     pub fn fetch_operand(&mut self, operation: &Operation) -> Operand {
@@ -267,19 +266,20 @@ impl<T: AddressSpace> Cpu<T> {
                     [0xFF, hbyte] => {
                         let lbyte = self.bus.peek(0x00);
                         self.bus.peek(u16::from_le_bytes([lbyte, hbyte]))
-                    },
+                    }
                     _ => self.bus.peek(addr_location + 1),
                 };
                 Operand::Address {
                     location: u16::from_le_bytes([byte1, byte2]),
                 }
-            },
+            }
             AddressingMode::AbsoluteX => Operand::Address {
                 location: u16::from_le_bytes([operation.data[0], operation.data[1]])
                     + self.X as u16,
             },
             AddressingMode::AbsoluteY => Operand::Address {
-                location: u16::from_le_bytes([operation.data[0], operation.data[1]]).wrapping_add(self.Y as u16),
+                location: u16::from_le_bytes([operation.data[0], operation.data[1]])
+                    .wrapping_add(self.Y as u16),
             },
 
             AddressingMode::ZeroPageX => Operand::Address {
@@ -299,7 +299,7 @@ impl<T: AddressSpace> Cpu<T> {
                 Operand::Address {
                     location: u16::from_le_bytes([byte1, byte2]),
                 }
-            },
+            }
 
             AddressingMode::IndirectY => {
                 let addressLocation = operation.data[0];
@@ -309,7 +309,7 @@ impl<T: AddressSpace> Cpu<T> {
                     _ => self.bus.peek((addressLocation + 1) as u16),
                 };
                 let address = u16::from_le_bytes([byte1, byte2]);
-                
+
                 Operand::Address {
                     location: address.wrapping_add(self.Y as u16),
                 }
@@ -321,7 +321,9 @@ impl<T: AddressSpace> Cpu<T> {
         let opcode_byte = self.bus.peek(self.PC);
         //println!("PC: {:#X} : {:#X}", self.PC, opcode_byte);
         self.PC += 1;
-        let mut operation = OPCODES[opcode_byte as usize].clone().expect(&format!("Unknown opcode {:#X}", opcode_byte));
+        let mut operation = OPCODES[opcode_byte as usize]
+            .clone()
+            .unwrap_or_else(|| panic!("Unknown opcode {:#X}", opcode_byte));
         let extra_bytes: u16 = match operation.addressing_mode {
             AddressingMode::Absolute => 2,
             AddressingMode::AbsoluteX => 2,
@@ -388,7 +390,7 @@ impl<T: AddressSpace> Cpu<T> {
             }
             _ => (),
         }
-        
+
         None
     }
 
@@ -463,7 +465,6 @@ impl<T: AddressSpace> Cpu<T> {
     }
 
     fn BRK(&mut self, operand: &Operand) -> Option<u8> {
-
         self.PC += 1;
         self.set_I(true);
         self.set_B(true);
@@ -673,7 +674,7 @@ impl<T: AddressSpace> Cpu<T> {
             }
             _ => (),
         }
-        
+
         None
     }
 
@@ -763,7 +764,7 @@ impl<T: AddressSpace> Cpu<T> {
             }
             _ => (),
         }
-        
+
         None
     }
 
