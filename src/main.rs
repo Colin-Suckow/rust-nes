@@ -93,7 +93,7 @@ fn main() {
 
         if cpu.bus.ppu.show_frame() {
             //Render frame
-            window.update_with_buffer(&cpu.bus.ppu.buffer, DISPLAY_WIDTH, DISPLAY_WIDTH).unwrap();
+            window.update_with_buffer(&cpu.bus.ppu.buffer, DISPLAY_WIDTH, DISPLAY_HEIGHT).unwrap();
 
             //Handle events
             if !window.is_open() {
