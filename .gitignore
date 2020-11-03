@@ -1,6 +1,7 @@
 /target
 **/*.rs.bk
-/.vscode
+.vscode
 mem.txt
 mytest.log
-/.idea
+.idea
+Cargo.lock
