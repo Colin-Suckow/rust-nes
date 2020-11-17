@@ -99,8 +99,12 @@ impl PPU {
                 (self.y % 8) as i32,
             );
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
-            let palette_segment = self.get_background_palette_segment(nametable as usize, self.x as usize, self.y as usize);
-            
+            let palette_segment = self.get_background_palette_segment(
+                nametable as usize,
+                self.x as usize,
+                self.y as usize,
+            );
+
             let color = self.get_palette_color(&palette_segment, val as u16);
             let mx = self.x.clone() as usize;
             let my = self.y.clone() as usize;
@@ -120,13 +124,16 @@ impl PPU {
         let py = y / 32;
         let index = (py * 8) + px;
         let pbyte = self.peek_vram((index + offset) as u16);
-        let val = match ((px * 32) + x, (py * 32) + y) {
-            (x, y) if x < 8 && y < 8 => pbyte & 0x3,          //topleft
-            (x, y) if x >= 8 && y < 8 => (pbyte >> 2) & 0x3,  //topright
-            (x, y) if x < 8 && y >= 8 => (pbyte >> 4) & 0x3,  //bottomleft
-            (x, y) if x >= 8 && y >= 8 => (pbyte >> 6) & 0x3, //tbottomright
-            _ => 0,
+        let right = ((px * 32) + x) % 32 >= 16;
+        let bottom = ((py * 32) + y) % 32 >= 16;
+        let val = match (bottom, right) {
+            (false, false) => pbyte & 0x3,         //topleft
+            (false, true) => (pbyte >> 2) & 0x3,   //topright
+            (true, false) => (pbyte >> 4) & 0x3, //bottomleft
+            (true, true) => (pbyte >> 6) & 0x3,  //bottomright
+            _ => 6,
         };
+
         match val {
             1 => PaletteRam::Background1,
             2 => PaletteRam::Background2,
@@ -194,7 +201,7 @@ impl PPU {
                     trow.clone() as i32,
                     sprite[2].get_bit(6),
                     sprite[2].get_bit(7),
-                    &segment
+                    &segment,
                 );
             }
 
@@ -296,7 +303,9 @@ impl PPU {
                 }
                 let val =
                     self.get_background_pixel_value(half.clone(), tile_column, tile_row, mc, mr);
-                if val == 0 {continue;}
+                if val == 0 {
+                    continue;
+                }
 
                 let color = self.get_palette_color(palette_segment, val as u16);
                 if ((((r + y) * DISPLAY_WIDTH as i32) + (c + x)) as usize) < 61440 {
