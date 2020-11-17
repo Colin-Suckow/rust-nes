@@ -9,7 +9,7 @@ Only supports basic, mapper 0, 16k games right now, so this emulator doesn't run
 - Balloon Fight
 
 ## Todo
-- Fix attribute map
+- ~~Fix attribute map~~
 - Add scroll support to ppu
 - Refactor to allow for mappers
 - Add mappers
