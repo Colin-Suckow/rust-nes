@@ -1,5 +1,5 @@
 use crate::cartridge::{CharacterData, MirrorMode};
-use crate::AddressSpace;
+use crate::memory::AddressSpace;
 use bit_field::BitField;
 
 pub const DISPLAY_WIDTH: usize = 256;

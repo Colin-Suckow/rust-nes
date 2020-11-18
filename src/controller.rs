@@ -1,9 +1,69 @@
-use crate::AddressSpace;
+use crate::memory::AddressSpace;
 use bit_field::BitField;
-use minifb::Key;
+
+pub struct ControllerState {
+    up: bool,
+    down: bool,
+    left: bool,
+    right: bool,
+    a: bool,
+    b: bool,
+    start: bool,
+    select: bool,
+}
+
+impl ControllerState {
+    pub fn new_empty() -> Self {
+        Self {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            a: false,
+            b: false,
+            start: false,
+            select: false,
+        }
+    }
+
+    pub fn new(
+        up: bool,
+        down: bool,
+        left: bool,
+        right: bool,
+        a: bool,
+        b: bool,
+        start: bool,
+        select: bool,
+    ) -> Self {
+        Self {
+            up,
+            down,
+            left,
+            right,
+            a,
+            b,
+            start,
+            select,
+        }
+    }
+
+    fn as_byte(&self) -> u8 {
+        let mut byte: u8 = 0;
+        byte.set_bit(4, self.up);
+        byte.set_bit(5, self.down);
+        byte.set_bit(6, self.left);
+        byte.set_bit(7, self.right);
+        byte.set_bit(0, self.a);
+        byte.set_bit(1, self.b);
+        byte.set_bit(3, self.start);
+        byte.set_bit(2, self.select);
+        byte
+    }
+}
 
 pub struct Controller {
-    pub state: u8,
+    pub state: ControllerState,
     polls: u8,
     strobe: bool,
 }
@@ -11,55 +71,24 @@ pub struct Controller {
 impl Controller {
     pub fn new() -> Self {
         Self {
-            state: 0,
+            state: ControllerState::new_empty(),
             polls: 0,
             strobe: false,
         }
     }
 
-    pub fn update(&mut self, keys_down: &Vec<Key>) {
-        self.state = 0;
-        for key in keys_down {
-            match key {
-                Key::W => {
-                    self.state.set_bit(4, true);
-                }
-                Key::A => {
-                    self.state.set_bit(6, true);
-                }
-                Key::S => {
-                    self.state.set_bit(5, true);
-                }
-                Key::D => {
-                    self.state.set_bit(7, true);
-                }
-                Key::Semicolon => {
-                    self.state.set_bit(0, true);
-                }
-                Key::Apostrophe => {
-                    self.state.set_bit(1, true);
-                }
-                Key::Enter => {
-                    self.state.set_bit(3, true);
-                }
-                Key::RightShift => {
-                    self.state.set_bit(2, true);
-                }
-                _ => (),
-            };
-        }
+    pub fn update_controller(&mut self, state: ControllerState) {
+        self.state = state;
     }
 }
 
 impl AddressSpace for Controller {
     fn peek(&mut self, ptr: u16) -> u8 {
         if ptr == 0x4016 {
-            //println!("poll: {}", self.polls);
-
             if self.polls > 7 {
                 2
             } else {
-                let val = (self.state.get_bit(self.polls as usize) as u8);
+                let val = self.state.as_byte().get_bit(self.polls as usize) as u8;
 
                 self.polls += 1;
 

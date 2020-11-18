@@ -1,23 +1,7 @@
-#![feature(const_if_match)]
-
 extern crate clap;
 use clap::{App, Arg};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-//use minifb::{Key, Window, WindowOptions, Menu, MenuItem, KeyRepeat};
-
 use minifb::{Key, Window, WindowOptions};
-
-mod cartridge;
-mod controller;
-mod cpu;
-mod instruction;
-mod memory;
-mod ppu;
-
-use crate::ppu::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
-use cpu::Cpu;
-use memory::AddressSpace;
+use nesemu::prelude::*;
 
 fn main() {
     let matches = App::new("rust-nes")
@@ -44,61 +28,34 @@ fn main() {
 
     println!("Recived argument {}", rom_path);
 
-    let mut rom = cartridge::Cartridge::load(rom_path);
+    let mut emu = Emulator::new(rom_path);
 
-    rom.printStats();
-
-    let mut ppu = crate::ppu::PPU::new(rom.take_character_data());
-
-    let controller = controller::Controller::new();
-
-    let mut bus = memory::Bus {
-        ram: memory::Ram::new(),
-        cartridge: rom.take_program_data(),
-        ppu: ppu,
-        controller: controller,
-    };
-
-    bus.write_mem();
-
-    let mut cpu = Cpu::new(bus);
-
-    cpu.reset();
-
-    let mut window = Window::new(
-        "NES Emulator",
-        DISPLAY_WIDTH * 3,
-        DISPLAY_HEIGHT * 3,
-        WindowOptions::default(),
-    )
-    .unwrap();
+    let mut window =
+        Window::new("NES Emulator", 256 * 3, 240 * 3, WindowOptions::default()).unwrap();
 
     window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
     'game_loop: loop {
-        if cpu.bus.ppu.check_nmi() {
-            cpu.fire_nmi();
+        emu.run_frame();
+        //Render frame
+        window.update_with_buffer(emu.buffer(), 256, 240).unwrap();
+
+        //Handle window close
+        if !window.is_open() {
+            break 'game_loop;
         }
 
-        cpu.step_cycle();
-
-        cpu.bus.ppu.step_cycle();
-        cpu.bus.ppu.step_cycle();
-        cpu.bus.ppu.step_cycle();
-
-        if cpu.bus.ppu.show_frame() {
-            //Render frame
-            window
-                .update_with_buffer(&cpu.bus.ppu.buffer, DISPLAY_WIDTH, DISPLAY_HEIGHT)
-                .unwrap();
-
-            //Handle window close
-            if !window.is_open() {
-                break 'game_loop;
-            }
-
-            //Update controller state
-            cpu.bus.controller.update(&window.get_keys().unwrap());
-        }
+        //Update controller state
+        let keys = window.get_keys().unwrap();
+        emu.update_controller_state(ControllerState::new(
+            keys.contains(&Key::W),
+            keys.contains(&Key::S),
+            keys.contains(&Key::A),
+            keys.contains(&Key::D),
+            keys.contains(&Key::Semicolon),
+            keys.contains(&Key::Apostrophe),
+            keys.contains(&Key::Enter),
+            keys.contains(&Key::RightShift),
+        ));
     }
 }
