@@ -1,14 +1,32 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Hello wasm-pack!</title>
-    <link rel="stylesheet" href="index.css">
-  </head>
-  <body>
-    <h1>Nes emu</h1>
-    <canvas id="render_canvas" width="512", height="480"></canvas>
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <script src="./bootstrap.js"></script>
-  </body>
+
+<head>
+  <meta charset="utf-8">
+  <title>Colin Suckow</title>
+  <link rel="stylesheet" href="flexboxgrid.min.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <div class="row center-xs">
+    <canvas class="box" id="render_canvas" width="512" , height="480"></canvas>
+    <div id="controls_container" class="box">
+      <h3>Controls</h3>
+      <ul>
+        <li>Up: W</li>
+        <li>Left: A</li>
+        <li>Down: S</li>
+        <li>Right: D</li>
+        <li>A: Semicolon</li>
+        <li>B: Apostrophe</li>
+        <li>Start: Enter</li>
+        <li>Select: Right Shift</li>
+      </ul>
+    </div>
+  </div>
+  <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+  <script src="./bootstrap.js"></script>
+</body>
+
 </html>

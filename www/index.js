@@ -15,6 +15,9 @@ function ready(fn) {
     }
 }
 
+wasm.ControllerState.new()
+
+
 function draw_frame(ctx, buffer) {
     let canvasHeight = 240
     let canvasWidth = 256
@@ -37,6 +40,17 @@ function draw_frame(ctx, buffer) {
     ctx.drawImage(ctx.canvas, 0, 0)
 }
 
+const keycodes = [
+    "KeyW",
+    "KeyS",
+    "KeyA",
+    "KeyD",
+    "ShiftRight",
+    "Enter",
+    "Semicolon",
+    "Quote"
+]
+
 ready(async function () {
 
     let file = await fetchRom("dk.nes")
@@ -49,12 +63,39 @@ ready(async function () {
     ctx.mozImageSmoothingEnabled = false;
     ctx.imageSmoothingEnabled = false;
     ctx.scale(2,2)
-    let start_time;
+    let pressedKeys = []
+    document.onkeydown = e => {
+        if (keycodes.includes(e.code)) {
+            e.preventDefault()
+            if(!pressedKeys.includes(e.code)) {
+                pressedKeys.push(e.code)
+            }
+        }
+    }
+
+    document.onkeyup = e => {
+        if (keycodes.includes(e.code)) {
+            e.preventDefault()
+            pressedKeys = pressedKeys.filter(code => {return code !== e.code})
+        }
+    }
 
     function frame(timestamp) {
         emu.run_frame()
         draw_frame(ctx, emu.buffer())
         window.requestAnimationFrame(frame)
+        emu.update_controller_state(
+            wasm.ControllerState.new(
+                pressedKeys.includes("KeyW"),
+                pressedKeys.includes("KeyS"),
+                pressedKeys.includes("KeyA"),
+                pressedKeys.includes("KeyD"),
+                pressedKeys.includes("Semicolon"),
+                pressedKeys.includes("Quote"),
+                pressedKeys.includes("Enter"),
+                pressedKeys.includes("ShiftRight"),
+            )
+        )
     }
 
     window.requestAnimationFrame(frame)
