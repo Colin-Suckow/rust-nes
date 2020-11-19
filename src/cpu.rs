@@ -21,7 +21,7 @@ pub struct Cpu<T: AddressSpace> {
     X: u8,   //Index X
     Y: u8,   //Index Y
     operation_progress: u8,
-    log: std::fs::File,
+    //log: std::fs::File,
 }
 
 impl<T: AddressSpace> Cpu<T> {
@@ -35,7 +35,7 @@ impl<T: AddressSpace> Cpu<T> {
             X: 0,
             Y: 0,
             operation_progress: 0,
-            log: std::fs::File::create("mytest.log").unwrap(),
+            //log: std::fs::File::create("mytest.log").unwrap(),
         }
     }
 

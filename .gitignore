@@ -5,3 +5,9 @@ mem.txt
 mytest.log
 .idea
 Cargo.lock
+/pkg
+/www/node_modules
+/www/dk.nes
+/www/.gitignore
+/www/package-lock.json
+/www/README.md

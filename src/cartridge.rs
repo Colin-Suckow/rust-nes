@@ -16,8 +16,7 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn load(path: &str) -> Cartridge {
-        let data = fs::read(path).expect("Failed to read file");
+    pub fn load(data: Vec<u8>) -> Cartridge {
         let header = &data[..16];
 
         let valid_ines = header[..4] == [0x4E, 0x45, 0x53, 0x1A];

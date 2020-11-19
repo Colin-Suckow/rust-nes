@@ -1,6 +1,7 @@
 use crate::memory::AddressSpace;
 use bit_field::BitField;
-
+use wasm_bindgen::prelude::*;
+#[wasm_bindgen]
 pub struct ControllerState {
     up: bool,
     down: bool,
@@ -12,6 +13,7 @@ pub struct ControllerState {
     select: bool,
 }
 
+#[wasm_bindgen]
 impl ControllerState {
     pub fn new_empty() -> Self {
         Self {

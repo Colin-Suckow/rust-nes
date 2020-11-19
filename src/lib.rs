@@ -1,28 +1,38 @@
 #![feature(const_if_match)]
 
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 mod cartridge;
 mod controller;
 mod cpu;
 mod instruction;
 mod memory;
 mod ppu;
+mod utils;
 
 use cpu::Cpu;
 use controller::ControllerState;
+use wasm_bindgen::prelude::*;
 
 pub mod prelude {
     pub use super::Emulator;
     pub use super::controller::ControllerState;
 }
+
+#[wasm_bindgen]
 pub struct Emulator {
     cpu: Cpu<memory::Bus>,
     framebuffer: Vec<u32>,
     latest_controller_state: ControllerState,
 }
 
+#[wasm_bindgen]
 impl Emulator {
-    pub fn new(rom_path: &str) -> Self {
-        let mut rom = cartridge::Cartridge::load(rom_path);
+    pub fn new(rom_data: Vec<u8>) -> Self {
+        utils::set_panic_hook();
+        let mut rom = cartridge::Cartridge::load(rom_data);
 
         //rom.printStats();
 
@@ -37,7 +47,7 @@ impl Emulator {
             controller: controller,
         };
 
-        bus.write_mem();
+        //bus.write_mem();
 
         let mut cpu = Cpu::new(bus);
 
@@ -78,7 +88,7 @@ impl Emulator {
         self.cpu.bus.controller.update_controller(state);
     }
 
-    pub fn buffer(&self) -> &Vec<u32> {
-        &self.framebuffer
+    pub fn buffer(&self) -> Vec<u32> {
+        self.framebuffer.clone()
     }
 }
