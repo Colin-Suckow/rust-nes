@@ -24,7 +24,8 @@ impl Cartridge {
             panic!("File is not a valid nes rom!");
         }
         // false = horizontal, true = vertical mirror
-        let char_mirror = mapMirrorMode(header[6] & 0b00000001).expect("Unsupported mirror mode!");
+        let char_mirror =
+            map_mirror_mode(header[6] & 0b00000001).expect("Unsupported mirror mode!");
         let trainer_present = (header[6] & 0b00000100) >> 2 == 1;
         let mapper = (header[7] & 0b11110000) + ((header[6] & 0b11110000) >> 4);
         let _char_mirror_text = String::new();
@@ -60,7 +61,8 @@ impl Cartridge {
         }
     }
 
-    pub fn printStats(&self) {
+    #[allow(dead_code)]
+    pub fn print_stats(&self) {
         println!("Mapper: {}", self.mapper);
         println!("Character Mirroring: {:?}", self.mirror_mode);
         match &self.prg_rom_data {
@@ -130,13 +132,14 @@ impl memory::AddressSpace for CharacterData {
     }
 }
 
+#[allow(dead_code)]
 pub fn print_ines_header(path: &str) {
     let data = fs::read(path).expect("Failed to read file");
     println!("{:X?}", data);
     println!("Total size = {}", data.len());
 }
 
-fn mapMirrorMode(mode_num: u8) -> Option<MirrorMode> {
+fn map_mirror_mode(mode_num: u8) -> Option<MirrorMode> {
     let _mode = match mode_num {
         0 => return Some(MirrorMode::Horizontal),
         1 => return Some(MirrorMode::Vertical),

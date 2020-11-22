@@ -22,15 +22,13 @@ pub struct PPU {
     vram: Vec<u8>,
     x: u16,
     y: u16,
-    PPUCTRL: u8,
-    PPUMASK: u8,
-    PPUSTATUS: u8,
-    OAMADDR: u8,
-    OAMDATA: u8,
-    PPUSCROLL: u8,
-    PPUADDR: u8,
-    PPUDATA: u8,
-    OAMDMA: u8,
+    ppuctrl: u8,
+    ppumask: u8,
+    ppustatus: u8,
+    oamaddr: u8,
+    ppuscroll: u8,
+    ppuaddr: u8,
+    ppudata: u8,
     addr_latch: bool,
     ppuaddr_address: u16,
     nmi_fired: bool,
@@ -38,7 +36,7 @@ pub struct PPU {
     palette_ram: Vec<u8>,
     scroll_x: u8,
     scroll_y: u8,
-    scroll_latch: bool
+    scroll_latch: bool,
 }
 
 impl PPU {
@@ -49,15 +47,13 @@ impl PPU {
             vram: vec![0x00; 2048],
             x: 0,
             y: 0,
-            PPUCTRL: 0,
-            PPUMASK: 0,
-            PPUSTATUS: 0,
-            OAMADDR: 0,
-            OAMDATA: 0,
-            PPUSCROLL: 0,
-            PPUADDR: 0,
-            PPUDATA: 0,
-            OAMDMA: 0,
+            ppuctrl: 0,
+            ppumask: 0,
+            ppustatus: 0,
+            oamaddr: 0,
+            ppuscroll: 0,
+            ppuaddr: 0,
+            ppudata: 0,
             addr_latch: false,
             ppuaddr_address: 0,
             nmi_fired: false,
@@ -75,12 +71,12 @@ impl PPU {
         self.update_status_register();
 
         if !self.check_vblank() {
-            let half = match self.PPUCTRL.get_bit(3) {
+            let half = match self.ppuctrl.get_bit(3) {
                 true => TableHalf::Left,
                 false => TableHalf::Right,
             };
 
-            let nametable = self.PPUCTRL & 0x3;
+            let nametable = self.ppuctrl & 0x3;
             let offset = match nametable {
                 0 => 0x2000,
                 1 => 0x2400,
@@ -133,11 +129,10 @@ impl PPU {
         let right = ((px * 32) + x) % 32 >= 16;
         let bottom = ((py * 32) + y) % 32 >= 16;
         let val = match (bottom, right) {
-            (false, false) => pbyte & 0x3,         //topleft
-            (false, true) => (pbyte >> 2) & 0x3,   //topright
+            (false, false) => pbyte & 0x3,       //topleft
+            (false, true) => (pbyte >> 2) & 0x3, //topright
             (true, false) => (pbyte >> 4) & 0x3, //bottomleft
             (true, true) => (pbyte >> 6) & 0x3,  //bottomright
-            _ => 6,
         };
 
         match val {
@@ -169,7 +164,7 @@ impl PPU {
     }
 
     pub fn check_nmi(&mut self) -> bool {
-        if self.PPUCTRL.get_bit(7) && self.y == 240 && !self.nmi_fired {
+        if self.ppuctrl.get_bit(7) && self.y == 240 && !self.nmi_fired {
             self.nmi_fired = true;
             true
         } else {
@@ -178,14 +173,14 @@ impl PPU {
     }
 
     fn update_status_register(&mut self) {
-        self.PPUSTATUS.set_bit(7, self.check_vblank());
+        self.ppustatus.set_bit(7, self.check_vblank());
     }
 
     pub fn show_frame(&mut self) -> bool {
         if self.y == 0 && self.nmi_fired {
             self.nmi_fired = false;
 
-            let half = match self.PPUCTRL.get_bit(3) {
+            let half = match self.ppuctrl.get_bit(3) {
                 true => TableHalf::Right,
                 false => TableHalf::Left,
             };
@@ -307,8 +302,7 @@ impl PPU {
                 if mirror_h {
                     mc = 7 - c;
                 }
-                let val =
-                    self.get_background_pixel_value(half, tile_column, tile_row, mc, mr);
+                let val = self.get_background_pixel_value(half, tile_column, tile_row, mc, mr);
                 if val == 0 {
                     continue;
                 }
@@ -363,32 +357,32 @@ impl PPU {
 impl AddressSpace for PPU {
     fn peek(&mut self, ptr: u16) -> u8 {
         match ptr {
-            0x2000 => self.PPUCTRL,
-            0x2001 => self.PPUMASK,
+            0x2000 => self.ppuctrl,
+            0x2001 => self.ppumask,
             0x2002 => {
                 self.addr_latch = false;
                 self.scroll_latch = false;
-                self.PPUSTATUS
+                self.ppustatus
             }
-            0x2003 => self.OAMADDR,
-            0x2004 => self.oam_mem[self.OAMADDR as usize],
-            0x2005 => self.PPUSCROLL,
-            0x2006 => self.PPUADDR,
-            0x2007 => self.PPUDATA,
+            0x2003 => self.oamaddr,
+            0x2004 => self.oam_mem[self.oamaddr as usize],
+            0x2005 => self.ppuscroll,
+            0x2006 => self.ppuaddr,
+            0x2007 => self.ppudata,
             _ => 0,
         }
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
-            0x2000 => self.PPUCTRL = byte,
-            0x2001 => self.PPUMASK = byte,
-            0x2002 => self.PPUSTATUS = byte,
-            0x2003 => self.OAMADDR = byte,
+            0x2000 => self.ppuctrl = byte,
+            0x2001 => self.ppumask = byte,
+            0x2002 => self.ppustatus = byte,
+            0x2003 => self.oamaddr = byte,
             0x2004 => {
                 //OAMDATA
-                self.oam_mem[self.OAMADDR as usize] = byte;
-                self.OAMADDR += 1;
+                self.oam_mem[self.oamaddr as usize] = byte;
+                self.oamaddr += 1;
             }
             0x2005 => {
                 if self.scroll_latch {
@@ -397,7 +391,7 @@ impl AddressSpace for PPU {
                     self.scroll_x = byte;
                     self.scroll_latch = true;
                 }
-            },
+            }
             0x2006 => {
                 //PPUADDR
                 self.ppuaddr_address = match self.addr_latch {
@@ -413,7 +407,7 @@ impl AddressSpace for PPU {
                 //PPUDATA
                 //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
                 self.poke_vram(self.ppuaddr_address, byte);
-                self.ppuaddr_address += if self.PPUCTRL.get_bit(2) { 32 } else { 1 };
+                self.ppuaddr_address += if self.ppuctrl.get_bit(2) { 32 } else { 1 };
             }
             _ => (),
         }

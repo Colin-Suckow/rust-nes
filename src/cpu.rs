@@ -13,43 +13,43 @@ pub enum Operand {
 pub struct Cpu<T: AddressSpace> {
     pub bus: T,
     //Registers
-    PC: u16, //Program counter
-    S: u8,   //Stack pointer
-    P: u8,   //Processor status
-    A: u8,   //Accumulator
-    X: u8,   //Index X
-    Y: u8,   //Index Y
-    operation_progress: u8
+    pc: u16, //Program counter
+    s: u8,   //Stack pointer
+    p: u8,   //Processor status
+    a: u8,   //Accumulator
+    x: u8,   //Index X
+    y: u8,   //Index Y
+    operation_progress: u8,
 }
 
 impl<T: AddressSpace> Cpu<T> {
     pub fn new(bus: T) -> Cpu<T> {
         Cpu {
             bus,
-            PC: 0,
-            S: 0x0FD,
-            P: 0x24,
-            A: 0,
-            X: 0,
-            Y: 0,
-            operation_progress: 0
+            pc: 0,
+            s: 0x0FD,
+            p: 0x24,
+            a: 0,
+            x: 0,
+            y: 0,
+            operation_progress: 0,
         }
     }
 
     pub fn reset(&mut self) {
-        self.PC = self.bus.peek_16(0xFFFC); //0xC000 for nestest
-        self.P = 0x24;
+        self.pc = self.bus.peek_16(0xFFFC); //0xC000 for nestest
+        self.p = 0x24;
     }
 
     fn push(&mut self, value: u8) {
         //println!("-->push {:#X}", value);
-        self.bus.poke(self.S as u16 + 0x100, value);
-        self.S -= 1;
+        self.bus.poke(self.s as u16 + 0x100, value);
+        self.s -= 1;
     }
 
     fn pop(&mut self) -> u8 {
-        self.S += 1;
-        let value = self.bus.peek(self.S as u16 + 0x100);
+        self.s += 1;
+        let value = self.bus.peek(self.s as u16 + 0x100);
         //println!("-->pop {:#X}", value);
         value
     }
@@ -69,59 +69,55 @@ impl<T: AddressSpace> Cpu<T> {
         num
     }
 
-    fn set_Z(&mut self, val: bool) {
-        self.P.set_bit(1, val);
+    fn set_z(&mut self, val: bool) {
+        self.p.set_bit(1, val);
     }
 
-    fn get_Z(&self) -> bool {
-        self.P.get_bit(1)
+    fn get_z(&self) -> bool {
+        self.p.get_bit(1)
     }
 
-    fn set_N(&mut self, val: bool) {
-        self.P.set_bit(7, val);
+    fn set_n(&mut self, val: bool) {
+        self.p.set_bit(7, val);
     }
 
-    fn get_N(&self) -> bool {
-        self.P.get_bit(7)
+    fn get_n(&self) -> bool {
+        self.p.get_bit(7)
     }
 
-    fn set_B(&mut self, val: bool) {
-        self.P.set_bit(4, val);
+    fn set_b(&mut self, val: bool) {
+        self.p.set_bit(4, val);
     }
 
-    fn set_I(&mut self, val: bool) {
-        self.P.set_bit(2, val);
+    fn set_i(&mut self, val: bool) {
+        self.p.set_bit(2, val);
     }
 
-    fn set_C(&mut self, val: bool) {
-        self.P.set_bit(0, val);
+    fn set_c(&mut self, val: bool) {
+        self.p.set_bit(0, val);
     }
 
-    fn get_C(&self) -> bool {
-        self.P.get_bit(0)
+    fn get_c(&self) -> bool {
+        self.p.get_bit(0)
     }
 
-    fn set_V(&mut self, val: bool) {
-        self.P.set_bit(6, val);
+    fn set_v(&mut self, val: bool) {
+        self.p.set_bit(6, val);
     }
 
-    fn get_V(&self) -> bool {
-        self.P.get_bit(6)
+    fn get_v(&self) -> bool {
+        self.p.get_bit(6)
     }
 
-    fn set_D(&mut self, val: bool) {
-        self.P.set_bit(3, val);
-    }
-
-    fn get_D(&self) -> bool {
-        self.P.get_bit(3)
+    fn set_d(&mut self, val: bool) {
+        self.p.set_bit(3, val);
     }
 
     pub fn fire_nmi(&mut self) {
         let addr = self.bus.peek_16(0xFFFA);
-        self.push_16(self.PC);
-        self.push(self.P);
-        self.PC = addr;
+        self.push_16(self.pc);
+        self.push(self.p);
+        self.pc = addr;
     }
 
     pub fn step_cycle(&mut self) {
@@ -131,7 +127,7 @@ impl<T: AddressSpace> Cpu<T> {
             return;
         }
 
-        let _inst_PC = self.PC;
+        let _inst_pc = self.pc;
 
         let operation = self.consume_next_operation();
 
@@ -143,7 +139,7 @@ impl<T: AddressSpace> Cpu<T> {
         let _operand_value = match &operand {
             Operand::Constant { value } => *value as u16,
             Operand::Address { location } => *location,
-            Operand::Accumulator => self.A as u16,
+            Operand::Accumulator => self.a as u16,
             Operand::None => 0,
         };
 
@@ -175,62 +171,62 @@ impl<T: AddressSpace> Cpu<T> {
         // );
 
         let extra_cycles = match operation.instruction {
-            Instruction::ADC => self.ADC(&operand),
-            Instruction::AND => self.AND(&operand),
-            Instruction::ASL => self.ASL(&operand),
-            Instruction::BCC => self.BCC(&operand),
-            Instruction::BCS => self.BCS(&operand),
-            Instruction::BEQ => self.BEQ(&operand),
-            Instruction::BIT => self.BIT(&operand),
-            Instruction::BMI => self.BMI(&operand),
-            Instruction::BNE => self.BNE(&operand),
-            Instruction::BPL => self.BPL(&operand),
-            Instruction::BRK => self.BRK(&operand),
-            Instruction::BVC => self.BVC(&operand),
-            Instruction::BVS => self.BVS(&operand),
-            Instruction::CLC => self.CLC(&operand),
-            Instruction::CLD => self.CLD(&operand),
-            Instruction::CLI => self.CLI(&operand),
-            Instruction::CLV => self.CLV(&operand),
-            Instruction::CMP => self.CMP(&operand),
-            Instruction::CPX => self.CPX(&operand),
-            Instruction::CPY => self.CPY(&operand),
-            Instruction::DEC => self.DEC(&operand),
-            Instruction::DEX => self.DEX(&operand),
-            Instruction::DEY => self.DEY(&operand),
-            Instruction::EOR => self.EOR(&operand),
-            Instruction::INC => self.INC(&operand),
-            Instruction::INX => self.INX(&operand),
-            Instruction::INY => self.INY(&operand),
-            Instruction::JMP => self.JMP(&operand),
-            Instruction::JSR => self.JSR(&operand),
-            Instruction::LDA => self.LDA(&operand),
-            Instruction::LDX => self.LDX(&operand),
-            Instruction::LDY => self.LDY(&operand),
-            Instruction::LSR => self.LSR(&operand),
-            Instruction::NOP => self.NOP(&operand),
-            Instruction::ORA => self.ORA(&operand),
-            Instruction::PHA => self.PHA(&operand),
-            Instruction::PHP => self.PHP(&operand),
-            Instruction::PLA => self.PLA(&operand),
-            Instruction::PLP => self.PLP(&operand),
-            Instruction::ROL => self.ROL(&operand),
-            Instruction::ROR => self.ROR(&operand),
-            Instruction::RTI => self.RTI(&operand),
-            Instruction::RTS => self.RTS(&operand),
-            Instruction::SBC => self.SBC(&operand),
-            Instruction::SEC => self.SEC(&operand),
-            Instruction::SED => self.SED(&operand),
-            Instruction::SEI => self.SEI(&operand),
-            Instruction::STA => self.STA(&operand),
-            Instruction::STX => self.STX(&operand),
-            Instruction::STY => self.STY(&operand),
-            Instruction::TAX => self.TAX(&operand),
-            Instruction::TAY => self.TAY(&operand),
-            Instruction::TSX => self.TSX(&operand),
-            Instruction::TXA => self.TXA(&operand),
-            Instruction::TXS => self.TXS(&operand),
-            Instruction::TYA => self.TYA(&operand),
+            Instruction::ADC => self.adc(&operand),
+            Instruction::AND => self.and(&operand),
+            Instruction::ASL => self.asl(&operand),
+            Instruction::BCC => self.bcc(&operand),
+            Instruction::BCS => self.bcs(&operand),
+            Instruction::BEQ => self.beq(&operand),
+            Instruction::BIT => self.bit(&operand),
+            Instruction::BMI => self.bmi(&operand),
+            Instruction::BNE => self.bne(&operand),
+            Instruction::BPL => self.bpl(&operand),
+            Instruction::BRK => self.brk(&operand),
+            Instruction::BVC => self.bvc(&operand),
+            Instruction::BVS => self.bvs(&operand),
+            Instruction::CLC => self.clc(&operand),
+            Instruction::CLD => self.cld(&operand),
+            Instruction::CLI => self.cli(&operand),
+            Instruction::CLV => self.clv(&operand),
+            Instruction::CMP => self.cmp(&operand),
+            Instruction::CPX => self.cpx(&operand),
+            Instruction::CPY => self.cpy(&operand),
+            Instruction::DEC => self.dec(&operand),
+            Instruction::DEX => self.dex(&operand),
+            Instruction::DEY => self.dey(&operand),
+            Instruction::EOR => self.eor(&operand),
+            Instruction::INC => self.inc(&operand),
+            Instruction::INX => self.inx(&operand),
+            Instruction::INY => self.iny(&operand),
+            Instruction::JMP => self.jmp(&operand),
+            Instruction::JSR => self.jsr(&operand),
+            Instruction::LDA => self.lda(&operand),
+            Instruction::LDX => self.ldx(&operand),
+            Instruction::LDY => self.ldy(&operand),
+            Instruction::LSR => self.lsr(&operand),
+            Instruction::NOP => self.nop(&operand),
+            Instruction::ORA => self.ora(&operand),
+            Instruction::PHA => self.pha(&operand),
+            Instruction::PHP => self.php(&operand),
+            Instruction::PLA => self.pla(&operand),
+            Instruction::PLP => self.plp(&operand),
+            Instruction::ROL => self.rol(&operand),
+            Instruction::ROR => self.ror(&operand),
+            Instruction::RTI => self.rti(&operand),
+            Instruction::RTS => self.rts(&operand),
+            Instruction::SBC => self.sbc(&operand),
+            Instruction::SEC => self.sec(&operand),
+            Instruction::SED => self.sed(&operand),
+            Instruction::SEI => self.sei(&operand),
+            Instruction::STA => self.sta(&operand),
+            Instruction::STX => self.stx(&operand),
+            Instruction::STY => self.sty(&operand),
+            Instruction::TAX => self.tax(&operand),
+            Instruction::TAY => self.tay(&operand),
+            Instruction::TSX => self.tsx(&operand),
+            Instruction::TXA => self.txa(&operand),
+            Instruction::TXS => self.txs(&operand),
+            Instruction::TYA => self.tya(&operand),
         };
 
         //Add extra cycles to the op length if the executing the instruction caused it
@@ -248,7 +244,7 @@ impl<T: AddressSpace> Cpu<T> {
             },
             AddressingMode::Implied => Operand::None,
             AddressingMode::Relative => Operand::Address {
-                location: relative_address(operation.data[0], self.PC),
+                location: relative_address(operation.data[0], self.pc),
             },
             AddressingMode::Absolute => Operand::Address {
                 location: absolute_address(operation.data[0], operation.data[1]),
@@ -272,26 +268,26 @@ impl<T: AddressSpace> Cpu<T> {
             }
             AddressingMode::AbsoluteX => Operand::Address {
                 location: u16::from_le_bytes([operation.data[0], operation.data[1]])
-                    + self.X as u16,
+                    + self.x as u16,
             },
             AddressingMode::AbsoluteY => Operand::Address {
                 location: u16::from_le_bytes([operation.data[0], operation.data[1]])
-                    .wrapping_add(self.Y as u16),
+                    .wrapping_add(self.y as u16),
             },
 
             AddressingMode::ZeroPageX => Operand::Address {
-                location: operation.data[0].wrapping_add(self.X) as u16,
+                location: operation.data[0].wrapping_add(self.x) as u16,
             },
             AddressingMode::ZeroPageY => Operand::Address {
-                location: operation.data[0].wrapping_add(self.Y) as u16,
+                location: operation.data[0].wrapping_add(self.y) as u16,
             },
 
             AddressingMode::IndirectX => {
-                let addressLocation = operation.data[0].wrapping_add(self.X);
-                let byte1 = self.bus.peek(addressLocation as u16);
-                let byte2 = match addressLocation {
+                let address_location = operation.data[0].wrapping_add(self.x);
+                let byte1 = self.bus.peek(address_location as u16);
+                let byte2 = match address_location {
                     0xFF => self.bus.peek(0),
-                    _ => self.bus.peek((addressLocation + 1) as u16),
+                    _ => self.bus.peek((address_location + 1) as u16),
                 };
                 Operand::Address {
                     location: u16::from_le_bytes([byte1, byte2]),
@@ -299,25 +295,25 @@ impl<T: AddressSpace> Cpu<T> {
             }
 
             AddressingMode::IndirectY => {
-                let addressLocation = operation.data[0];
-                let byte1 = self.bus.peek(addressLocation as u16);
-                let byte2 = match addressLocation {
+                let address_location = operation.data[0];
+                let byte1 = self.bus.peek(address_location as u16);
+                let byte2 = match address_location {
                     0xFF => self.bus.peek(0),
-                    _ => self.bus.peek((addressLocation + 1) as u16),
+                    _ => self.bus.peek((address_location + 1) as u16),
                 };
                 let address = u16::from_le_bytes([byte1, byte2]);
 
                 Operand::Address {
-                    location: address.wrapping_add(self.Y as u16),
+                    location: address.wrapping_add(self.y as u16),
                 }
             }
         }
     }
 
     fn consume_next_operation(&mut self) -> Operation {
-        let opcode_byte = self.bus.peek(self.PC);
+        let opcode_byte = self.bus.peek(self.pc);
         //println!("PC: {:#X} : {:#X}", self.PC, opcode_byte);
-        self.PC += 1;
+        self.pc += 1;
         let mut operation = OPCODES[opcode_byte as usize]
             .clone()
             .unwrap_or_else(|| panic!("Unknown opcode {:#X}", opcode_byte));
@@ -331,58 +327,58 @@ impl<T: AddressSpace> Cpu<T> {
             _ => 1,
         };
         for i in 0..extra_bytes {
-            operation.data.push(self.bus.peek(self.PC + i));
+            operation.data.push(self.bus.peek(self.pc + i));
         }
-        self.PC += extra_bytes;
+        self.pc += extra_bytes;
         operation
     }
 
     //CPU functions
 
-    fn ADC(&mut self, operand: &Operand) -> Option<u8> {
+    fn adc(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        let old_c = self.get_C() as u8;
-        let old_n = self.A.get_bit(7);
-        self.set_C(self.A.checked_add(val.saturating_add(old_c)) == None);
-        self.A = self.A.wrapping_add(val.wrapping_add(old_c));
-        self.set_N(self.A.get_bit(7));
-        self.set_V(old_n == val.get_bit(7) && old_n != self.A.get_bit(7));
-        self.set_Z(self.A == 0);
+        let old_c = self.get_c() as u8;
+        let old_n = self.a.get_bit(7);
+        self.set_c(self.a.checked_add(val.saturating_add(old_c)) == None);
+        self.a = self.a.wrapping_add(val.wrapping_add(old_c));
+        self.set_n(self.a.get_bit(7));
+        self.set_v(old_n == val.get_bit(7) && old_n != self.a.get_bit(7));
+        self.set_z(self.a == 0);
         None
     }
 
-    fn AND(&mut self, operand: &Operand) -> Option<u8> {
+    fn and(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A &= op;
-        self.set_standard_flags(&self.A.clone());
+        self.a &= op;
+        self.set_standard_flags(&self.a.clone());
         None
     }
 
-    fn ASL(&mut self, operand: &Operand) -> Option<u8> {
+    fn asl(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
                 let val = self.bus.peek(*location);
                 let shifted_val = val << 1;
-                self.set_C(val.get_bit(7));
-                self.set_N(shifted_val.get_bit(7));
-                self.set_Z(shifted_val == 0);
+                self.set_c(val.get_bit(7));
+                self.set_n(shifted_val.get_bit(7));
+                self.set_z(shifted_val == 0);
                 self.bus.poke(*location, shifted_val);
             }
             Operand::Accumulator => {
-                let val = self.A;
+                let val = self.a;
                 let shifted_val = val << 1;
-                self.set_C(val.get_bit(7));
-                self.set_N(shifted_val.get_bit(7));
-                self.set_Z(shifted_val == 0);
-                self.A = shifted_val;
+                self.set_c(val.get_bit(7));
+                self.set_n(shifted_val.get_bit(7));
+                self.set_z(shifted_val == 0);
+                self.a = shifted_val;
                 //self.PC -= 1;
             }
             _ => (),
@@ -391,30 +387,30 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn BCC(&mut self, operand: &Operand) -> Option<u8> {
+    fn bcc(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if !self.get_C() {
-            self.PC = addr;
+        if !self.get_c() {
+            self.pc = addr;
             Some(2)
         } else {
             None
         }
     }
 
-    fn BCS(&mut self, operand: &Operand) -> Option<u8> {
+    fn bcs(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if self.get_C() {
-            self.PC = addr;
+        if self.get_c() {
+            self.pc = addr;
             Some(2)
         } else {
             None
         }
     }
 
-    fn BEQ(&mut self, operand: &Operand) -> Option<u8> {
+    fn beq(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if self.get_Z() {
-            self.PC = addr;
+        if self.get_z() {
+            self.pc = addr;
             Some(2)
         } else {
             None
@@ -424,249 +420,249 @@ impl<T: AddressSpace> Cpu<T> {
     //11100100 nes
     //10100100 mine
 
-    fn BIT(&mut self, operand: &Operand) -> Option<u8> {
+    fn bit(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
         let val = self.bus.peek(addr);
-        self.set_N(val.get_bit(7));
-        self.set_V(val.get_bit(6));
-        self.set_Z(val & self.A == 0);
+        self.set_n(val.get_bit(7));
+        self.set_v(val.get_bit(6));
+        self.set_z(val & self.a == 0);
         None
     }
 
-    fn BMI(&mut self, operand: &Operand) -> Option<u8> {
+    fn bmi(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if self.get_N() {
-            self.PC = addr;
+        if self.get_n() {
+            self.pc = addr;
             Some(2)
         } else {
             None
         }
     }
 
-    fn BNE(&mut self, operand: &Operand) -> Option<u8> {
+    fn bne(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if !self.get_Z() {
-            self.PC = addr;
+        if !self.get_z() {
+            self.pc = addr;
             Some(2)
         } else {
             None
         }
     }
 
-    fn BPL(&mut self, operand: &Operand) -> Option<u8> {
+    fn bpl(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if !self.get_N() {
-            self.PC = addr;
+        if !self.get_n() {
+            self.pc = addr;
         };
         None
     }
 
-    fn BRK(&mut self, _operand: &Operand) -> Option<u8> {
-        self.PC += 1;
-        self.set_I(true);
-        self.set_B(true);
+    fn brk(&mut self, _operand: &Operand) -> Option<u8> {
+        self.pc += 1;
+        self.set_i(true);
+        self.set_b(true);
         let vec = self.bus.peek_16(0xFFFE);
-        self.push_16(self.PC);
-        self.PC = vec;
+        self.push_16(self.pc);
+        self.pc = vec;
         Some(5)
     }
 
-    fn BVC(&mut self, operand: &Operand) -> Option<u8> {
+    fn bvc(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if !self.get_V() {
-            self.PC = addr;
+        if !self.get_v() {
+            self.pc = addr;
         };
         None
     }
 
-    fn BVS(&mut self, operand: &Operand) -> Option<u8> {
+    fn bvs(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        if self.get_V() {
-            self.PC = addr;
+        if self.get_v() {
+            self.pc = addr;
         };
         None
     }
 
-    fn CLC(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_C(false);
+    fn clc(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_c(false);
         None
     }
 
-    fn CLD(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_D(false);
+    fn cld(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_d(false);
         None
     }
 
-    fn CLI(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_I(false);
+    fn cli(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_i(false);
         None
     }
 
-    fn CLV(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_V(false);
+    fn clv(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_v(false);
         None
     }
 
-    fn CMP(&mut self, operand: &Operand) -> Option<u8> {
+    fn cmp(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
-            Operand::Accumulator => self.A,
+            Operand::Accumulator => self.a,
             Operand::None => 0,
         };
-        self.set_C(value <= self.A);
-        self.set_N((self.A.wrapping_sub(value)).get_bit(7));
-        self.set_Z(value == self.A);
+        self.set_c(value <= self.a);
+        self.set_n((self.a.wrapping_sub(value)).get_bit(7));
+        self.set_z(value == self.a);
         None
     }
 
-    fn CPX(&mut self, operand: &Operand) -> Option<u8> {
+    fn cpx(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
-            Operand::Accumulator => self.A,
+            Operand::Accumulator => self.a,
             Operand::None => 0,
         };
-        self.set_C(value <= self.X);
-        self.set_N((self.X.wrapping_sub(value)).get_bit(7));
-        self.set_Z(value == self.X);
+        self.set_c(value <= self.x);
+        self.set_n((self.x.wrapping_sub(value)).get_bit(7));
+        self.set_z(value == self.x);
         None
     }
 
-    fn CPY(&mut self, operand: &Operand) -> Option<u8> {
+    fn cpy(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
-            Operand::Accumulator => self.A,
+            Operand::Accumulator => self.a,
             Operand::None => 0,
         };
-        self.set_C(value <= self.Y);
-        self.set_N((self.Y.wrapping_sub(value)).get_bit(7));
-        self.set_Z(value == self.Y);
+        self.set_c(value <= self.y);
+        self.set_n((self.y.wrapping_sub(value)).get_bit(7));
+        self.set_z(value == self.y);
         None
     }
 
-    fn DEC(&mut self, operand: &Operand) -> Option<u8> {
+    fn dec(&mut self, operand: &Operand) -> Option<u8> {
         let address = unpack_address(operand);
         let val = self.bus.peek(address).wrapping_sub(1);
         self.bus.poke(address, val);
-        self.set_Z(val == 0);
-        self.set_N(val.get_bit(7));
+        self.set_z(val == 0);
+        self.set_n(val.get_bit(7));
         Some(2)
     }
 
-    fn DEX(&mut self, _operand: &Operand) -> Option<u8> {
-        self.X = self.X.wrapping_sub(1);
-        self.set_standard_flags(&self.X.clone());
+    fn dex(&mut self, _operand: &Operand) -> Option<u8> {
+        self.x = self.x.wrapping_sub(1);
+        self.set_standard_flags(&self.x.clone());
         None
     }
 
-    fn DEY(&mut self, _operand: &Operand) -> Option<u8> {
-        self.Y = self.Y.wrapping_sub(1);
-        self.set_standard_flags(&self.Y.clone());
+    fn dey(&mut self, _operand: &Operand) -> Option<u8> {
+        self.y = self.y.wrapping_sub(1);
+        self.set_standard_flags(&self.y.clone());
         None
     }
 
-    fn EOR(&mut self, operand: &Operand) -> Option<u8> {
+    fn eor(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A ^= op;
-        self.set_standard_flags(&self.A.clone());
+        self.a ^= op;
+        self.set_standard_flags(&self.a.clone());
         None
     }
 
-    fn INC(&mut self, operand: &Operand) -> Option<u8> {
+    fn inc(&mut self, operand: &Operand) -> Option<u8> {
         let address = unpack_address(operand);
         let val = self.bus.peek(address).wrapping_add(1);
         self.bus.poke(address, val);
-        self.set_Z(val == 0);
-        self.set_N(val.get_bit(7));
+        self.set_z(val == 0);
+        self.set_n(val.get_bit(7));
         Some(2)
     }
 
-    fn INX(&mut self, _operand: &Operand) -> Option<u8> {
-        self.X = self.X.wrapping_add(1);
-        self.set_standard_flags(&self.X.clone());
+    fn inx(&mut self, _operand: &Operand) -> Option<u8> {
+        self.x = self.x.wrapping_add(1);
+        self.set_standard_flags(&self.x.clone());
         None
     }
 
-    fn INY(&mut self, _operand: &Operand) -> Option<u8> {
-        self.Y = self.Y.wrapping_add(1);
-        self.set_standard_flags(&self.Y.clone());
+    fn iny(&mut self, _operand: &Operand) -> Option<u8> {
+        self.y = self.y.wrapping_add(1);
+        self.set_standard_flags(&self.y.clone());
         None
     }
 
-    fn JMP(&mut self, operand: &Operand) -> Option<u8> {
+    fn jmp(&mut self, operand: &Operand) -> Option<u8> {
         let addr = unpack_address(operand);
-        self.PC = addr;
+        self.pc = addr;
         None
     }
 
-    fn JSR(&mut self, operand: &Operand) -> Option<u8> {
-        self.push_16(self.PC - 1);
-        self.PC = unpack_address(operand);
+    fn jsr(&mut self, operand: &Operand) -> Option<u8> {
+        self.push_16(self.pc - 1);
+        self.pc = unpack_address(operand);
         Some(4)
     }
 
-    fn LDA(&mut self, operand: &Operand) -> Option<u8> {
+    fn lda(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.A = *value,
-            Operand::Address { location } => self.A = self.bus.peek(*location),
+            Operand::Constant { value } => self.a = *value,
+            Operand::Address { location } => self.a = self.bus.peek(*location),
             _ => (),
         };
-        self.set_N(self.A.get_bit(7));
-        self.set_Z(self.A == 0);
+        self.set_n(self.a.get_bit(7));
+        self.set_z(self.a == 0);
         None
     }
 
-    fn LDX(&mut self, operand: &Operand) -> Option<u8> {
+    fn ldx(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.X = *value,
-            Operand::Address { location } => self.X = self.bus.peek(*location),
-            Operand::Accumulator => self.X = self.A,
+            Operand::Constant { value } => self.x = *value,
+            Operand::Address { location } => self.x = self.bus.peek(*location),
+            Operand::Accumulator => self.x = self.a,
             Operand::None => (),
         }
 
-        self.set_N(self.X.get_bit(7));
-        self.set_Z(self.X == 0);
+        self.set_n(self.x.get_bit(7));
+        self.set_z(self.x == 0);
 
         None
     }
 
-    fn LDY(&mut self, operand: &Operand) -> Option<u8> {
+    fn ldy(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.Y = *value,
-            Operand::Address { location } => self.Y = self.bus.peek(*location),
-            Operand::Accumulator => self.Y = self.A,
+            Operand::Constant { value } => self.y = *value,
+            Operand::Address { location } => self.y = self.bus.peek(*location),
+            Operand::Accumulator => self.y = self.a,
             Operand::None => (),
         }
 
-        self.set_N(self.Y.get_bit(7));
-        self.set_Z(self.Y == 0);
+        self.set_n(self.y.get_bit(7));
+        self.set_z(self.y == 0);
 
         None
     }
 
-    fn LSR(&mut self, operand: &Operand) -> Option<u8> {
+    fn lsr(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
                 let val = self.bus.peek(*location);
                 let shifted_val = val >> 1;
-                self.set_C(val.get_bit(0));
-                self.set_N(false);
-                self.set_Z(shifted_val == 0);
+                self.set_c(val.get_bit(0));
+                self.set_n(false);
+                self.set_z(shifted_val == 0);
                 self.bus.poke(*location, shifted_val);
             }
             Operand::Accumulator => {
-                let val = self.A;
+                let val = self.a;
                 let shifted_val = val >> 1;
-                self.set_C(val.get_bit(0));
-                self.set_N(false);
-                self.set_Z(shifted_val == 0);
-                self.A = shifted_val;
+                self.set_c(val.get_bit(0));
+                self.set_n(false);
+                self.set_z(shifted_val == 0);
+                self.a = shifted_val;
                 //self.PC -= 1;
             }
             _ => (),
@@ -675,88 +671,88 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn NOP(&mut self, _operand: &Operand) -> Option<u8> {
+    fn nop(&mut self, _operand: &Operand) -> Option<u8> {
         None
     }
 
-    fn ORA(&mut self, operand: &Operand) -> Option<u8> {
+    fn ora(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A |= op;
-        self.set_standard_flags(&self.A.clone());
+        self.a |= op;
+        self.set_standard_flags(&self.a.clone());
         None
     }
 
-    fn PHA(&mut self, _operand: &Operand) -> Option<u8> {
-        self.push(self.A);
+    fn pha(&mut self, _operand: &Operand) -> Option<u8> {
+        self.push(self.a);
         Some(1)
     }
 
-    fn PHP(&mut self, _operand: &Operand) -> Option<u8> {
-        self.push(self.P | 0x10);
+    fn php(&mut self, _operand: &Operand) -> Option<u8> {
+        self.push(self.p | 0x10);
         Some(1)
     }
 
-    fn PLA(&mut self, _operand: &Operand) -> Option<u8> {
-        self.A = self.pop();
-        self.set_standard_flags(&self.A.clone());
+    fn pla(&mut self, _operand: &Operand) -> Option<u8> {
+        self.a = self.pop();
+        self.set_standard_flags(&self.a.clone());
         Some(2)
     }
 
-    fn PLP(&mut self, _operand: &Operand) -> Option<u8> {
-        self.P = self.pop();
-        self.P.set_bit(4, false);
-        self.P.set_bit(5, true);
+    fn plp(&mut self, _operand: &Operand) -> Option<u8> {
+        self.p = self.pop();
+        self.p.set_bit(4, false);
+        self.p.set_bit(5, true);
         Some(2)
     }
 
-    fn ROL(&mut self, operand: &Operand) -> Option<u8> {
+    fn rol(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
                 let val = self.bus.peek(*location);
                 let mut rotated_val = val << 1;
-                rotated_val.set_bit(0, self.get_C());
-                self.set_C(val.get_bit(7));
-                self.set_N(rotated_val.get_bit(7));
-                self.set_Z(rotated_val == 0);
+                rotated_val.set_bit(0, self.get_c());
+                self.set_c(val.get_bit(7));
+                self.set_n(rotated_val.get_bit(7));
+                self.set_z(rotated_val == 0);
                 self.bus.poke(*location, rotated_val);
             }
             Operand::Accumulator => {
-                let val = self.A;
+                let val = self.a;
                 let mut rotated_val = val << 1;
-                rotated_val.set_bit(0, self.get_C());
-                self.set_C(val.get_bit(7));
-                self.set_N(rotated_val.get_bit(7));
-                self.set_Z(rotated_val == 0);
-                self.A = rotated_val;
+                rotated_val.set_bit(0, self.get_c());
+                self.set_c(val.get_bit(7));
+                self.set_n(rotated_val.get_bit(7));
+                self.set_z(rotated_val == 0);
+                self.a = rotated_val;
             }
             _ => (),
         }
         None
     }
 
-    fn ROR(&mut self, operand: &Operand) -> Option<u8> {
+    fn ror(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
                 let val = self.bus.peek(*location);
                 let mut rotated_val = val >> 1;
-                rotated_val.set_bit(7, self.get_C());
-                self.set_C(val.get_bit(0));
-                self.set_N(rotated_val.get_bit(7));
-                self.set_Z(rotated_val == 0);
+                rotated_val.set_bit(7, self.get_c());
+                self.set_c(val.get_bit(0));
+                self.set_n(rotated_val.get_bit(7));
+                self.set_z(rotated_val == 0);
                 self.bus.poke(*location, rotated_val);
             }
             Operand::Accumulator => {
-                let val = self.A;
+                let val = self.a;
                 let mut rotated_val = val >> 1;
-                rotated_val.set_bit(7, self.get_C());
-                self.set_C(val.get_bit(0));
-                self.set_N(rotated_val.get_bit(7));
-                self.set_Z(rotated_val == 0);
-                self.A = rotated_val;
+                rotated_val.set_bit(7, self.get_c());
+                self.set_c(val.get_bit(0));
+                self.set_n(rotated_val.get_bit(7));
+                self.set_z(rotated_val == 0);
+                self.a = rotated_val;
                 //self.PC -= 1;
             }
             _ => (),
@@ -765,111 +761,111 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn RTI(&mut self, _operand: &Operand) -> Option<u8> {
-        self.P = self.pop();
-        self.PC = self.pop_16();
-        self.P.set_bit(4, false);
-        self.P.set_bit(5, true);
+    fn rti(&mut self, _operand: &Operand) -> Option<u8> {
+        self.p = self.pop();
+        self.pc = self.pop_16();
+        self.p.set_bit(4, false);
+        self.p.set_bit(5, true);
         None
     }
 
-    fn RTS(&mut self, _operand: &Operand) -> Option<u8> {
-        self.PC = self.pop_16().wrapping_add(1);
+    fn rts(&mut self, _operand: &Operand) -> Option<u8> {
+        self.pc = self.pop_16().wrapping_add(1);
         None
     }
 
-    fn SBC(&mut self, operand: &Operand) -> Option<u8> {
+    fn sbc(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
             Operand::Constant { value } => *value,
             Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        let carry = !self.get_C() as u8;
-        let old_n = !self.A.get_bit(7);
-        self.set_C(self.A.checked_sub(val.saturating_add(carry)) != None);
-        self.A = self.A.wrapping_sub(val.wrapping_add(carry));
-        self.set_N(self.A.get_bit(7));
-        self.set_V(old_n == val.get_bit(7) && old_n == self.A.get_bit(7));
-        self.set_Z(self.A == 0);
+        let carry = !self.get_c() as u8;
+        let old_n = !self.a.get_bit(7);
+        self.set_c(self.a.checked_sub(val.saturating_add(carry)) != None);
+        self.a = self.a.wrapping_sub(val.wrapping_add(carry));
+        self.set_n(self.a.get_bit(7));
+        self.set_v(old_n == val.get_bit(7) && old_n == self.a.get_bit(7));
+        self.set_z(self.a == 0);
         None
     }
 
-    fn SEC(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_C(true);
+    fn sec(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_c(true);
         None
     }
 
-    fn SED(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_D(true);
+    fn sed(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_d(true);
         None
     }
 
-    fn SEI(&mut self, _operand: &Operand) -> Option<u8> {
-        self.set_I(true);
+    fn sei(&mut self, _operand: &Operand) -> Option<u8> {
+        self.set_i(true);
         None
     }
 
-    fn STA(&mut self, operand: &Operand) -> Option<u8> {
+    fn sta(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(*location, self.A),
+            Operand::Address { location } => self.bus.poke(*location, self.a),
             _ => {}
         }
         None
     }
 
-    fn STX(&mut self, operand: &Operand) -> Option<u8> {
+    fn stx(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(*location, self.X),
+            Operand::Address { location } => self.bus.poke(*location, self.x),
             _ => {}
         }
         None
     }
 
-    fn STY(&mut self, operand: &Operand) -> Option<u8> {
+    fn sty(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(*location, self.Y),
+            Operand::Address { location } => self.bus.poke(*location, self.y),
             _ => {}
         }
         None
     }
 
-    fn TAX(&mut self, _operand: &Operand) -> Option<u8> {
-        self.X = self.A;
-        self.set_standard_flags(&self.X.clone());
+    fn tax(&mut self, _operand: &Operand) -> Option<u8> {
+        self.x = self.a;
+        self.set_standard_flags(&self.x.clone());
         None
     }
 
-    fn TAY(&mut self, _operand: &Operand) -> Option<u8> {
-        self.Y = self.A;
-        self.set_standard_flags(&self.Y.clone());
+    fn tay(&mut self, _operand: &Operand) -> Option<u8> {
+        self.y = self.a;
+        self.set_standard_flags(&self.y.clone());
         None
     }
 
-    fn TSX(&mut self, _operand: &Operand) -> Option<u8> {
-        self.X = self.S;
-        self.set_standard_flags(&self.X.clone());
+    fn tsx(&mut self, _operand: &Operand) -> Option<u8> {
+        self.x = self.s;
+        self.set_standard_flags(&self.x.clone());
         None
     }
 
-    fn TXA(&mut self, _operand: &Operand) -> Option<u8> {
-        self.A = self.X;
-        self.set_standard_flags(&self.A.clone());
+    fn txa(&mut self, _operand: &Operand) -> Option<u8> {
+        self.a = self.x;
+        self.set_standard_flags(&self.a.clone());
         None
     }
 
-    fn TXS(&mut self, _operand: &Operand) -> Option<u8> {
-        self.S = self.X;
+    fn txs(&mut self, _operand: &Operand) -> Option<u8> {
+        self.s = self.x;
         None
     }
 
-    fn TYA(&mut self, _operand: &Operand) -> Option<u8> {
-        self.A = self.Y;
-        self.set_standard_flags(&self.A.clone());
+    fn tya(&mut self, _operand: &Operand) -> Option<u8> {
+        self.a = self.y;
+        self.set_standard_flags(&self.a.clone());
         None
     }
     fn set_standard_flags(&mut self, val: &u8) {
-        self.set_Z(*val == 0);
-        self.set_N(val.get_bit(7));
+        self.set_z(*val == 0);
+        self.set_n(val.get_bit(7));
     }
 }
 

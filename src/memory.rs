@@ -47,6 +47,7 @@ pub struct Bus {
 }
 
 impl Bus {
+    #[allow(dead_code)]
     pub fn debug_print_memory(&mut self) {
         for address in 0..0xFFFF {
             let val = self.peek(address as u16);
@@ -105,9 +106,7 @@ impl AddressSpace for TestBus {
         (ptr % 255) as u8
     }
 
-    fn poke(&mut self, _ptr: u16, _byte: u8) {
-        
-    }
+    fn poke(&mut self, _ptr: u16, _byte: u8) {}
 }
 
 pub fn relative_address(offset: u8, pc: u16) -> u16 {
@@ -120,18 +119,6 @@ pub fn absolute_address(byte1: u8, byte2: u8) -> u16 {
 
 pub fn zero_page_address(byte: u8) -> u16 {
     byte as u16
-}
-
-pub fn absolute_indexed_address(byte1: u8, byte2: u8, register: u8) -> u16 {
-    absolute_address(byte1, byte2) + register as u16
-}
-
-pub fn zero_page_indexed_address(byte: u8, register: u8) -> u16 {
-    byte.wrapping_add(register) as u16
-}
-
-pub fn indexed_indirect_address_location(byte: u8, x: u8) -> u16 {
-    byte.wrapping_add(x) as u16
 }
 
 #[cfg(test)]
@@ -163,20 +150,5 @@ mod tests {
     #[test]
     fn test_zero_page_address() {
         assert_eq!(zero_page_address(0x10), 0x0010);
-    }
-
-    #[test]
-    fn test_absolute_indexed_address() {
-        assert_eq!(absolute_indexed_address(0x10, 0x20, 0x1), 0x2011);
-    }
-
-    #[test]
-    fn test_zero_page_indexed_address() {
-        assert_eq!(zero_page_indexed_address(0xC0, 0x60), 0x0020);
-    }
-
-    #[test]
-    fn test_indexed_indirect_address_location() {
-        assert_eq!(indexed_indirect_address_location(0x20, 0x04), 0x0024);
     }
 }

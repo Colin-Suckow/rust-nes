@@ -86,9 +86,8 @@ pub struct Operation {
     pub data: Vec<u8>,
 }
 
-
 macro_rules! oc {
-    ($inst:expr, $address:expr) => {    
+    ($inst:expr, $address:expr) => {
         Some(Operation {
             instruction: $inst,
             addressing_mode: $address,

@@ -5,16 +5,16 @@ mod instruction;
 mod memory;
 mod ppu;
 
-use cpu::Cpu;
 use controller::ControllerState;
+use cpu::Cpu;
 
 pub mod prelude {
-    pub use super::Emulator;
     pub use super::controller::ControllerState;
+    pub use super::Emulator;
 }
 pub struct Emulator {
     cpu: Cpu<memory::Bus>,
-    framebuffer: Vec<u32>
+    framebuffer: Vec<u32>,
 }
 
 impl Emulator {
@@ -42,7 +42,7 @@ impl Emulator {
 
         Self {
             cpu,
-            framebuffer: vec![0; 256 * 240]
+            framebuffer: vec![0; 256 * 240],
         }
     }
 
