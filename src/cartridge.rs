@@ -17,7 +17,6 @@ pub struct Cartridge {
 
 impl Cartridge {
     pub fn load(data: Vec<u8>) -> Cartridge {
-        
         let header = &data[..16];
 
         let valid_ines = header[..4] == [0x4E, 0x45, 0x53, 0x1A];
@@ -82,19 +81,37 @@ pub struct ProgramData {
 
 impl memory::AddressSpace for ProgramData {
     fn peek(&mut self, ptr: u16) -> u8 {
-        match ptr {
-            0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
-            0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
-            _ => 0x00,
+        match self.data.len() {
+            l if l < 17000 => match ptr {
+                0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
+                0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)],
+                _ => 0x00,
+            },
+            _ => match ptr {
+                0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)],
+                0xC000..=0xFFFF => self.data[((ptr - 0x8000) as usize)],
+                _ => 0x00,
+            },
         }
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
-        match ptr {
-            0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)] = byte,
-            0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)] = byte,
-            _ => (),
-        };
+        match self.data.len() {
+            l if l < 17000 => {
+                match ptr {
+                    0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)] = byte,
+                    0xC000..=0xFFFF => self.data[((ptr - 0xC000) as usize)] = byte,
+                    _ => (),
+                };
+            }
+            _ => {
+                match ptr {
+                    0x8000..=0xBFFF => self.data[((ptr - 0x8000) as usize)] = byte,
+                    0xC000..=0xFFFF => self.data[((ptr - 0x8000) as usize)] = byte,
+                    _ => (),
+                };
+            }
+        }
     }
 }
 

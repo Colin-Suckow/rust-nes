@@ -36,6 +36,9 @@ pub struct PPU {
     nmi_fired: bool,
     oam_mem: Vec<u8>,
     palette_ram: Vec<u8>,
+    scroll_x: u8,
+    scroll_y: u8,
+    scroll_latch: bool
 }
 
 impl PPU {
@@ -60,6 +63,9 @@ impl PPU {
             nmi_fired: false,
             oam_mem: vec![0; 256],
             palette_ram: vec![0; 0x0020],
+            scroll_x: 0,
+            scroll_y: 0,
+            scroll_latch: false,
         }
     }
 
@@ -83,8 +89,8 @@ impl PPU {
                 _ => 0,
             };
 
-            let col = (self.x / 8) as u16;
-            let row = (self.y / 8) as u16;
+            let col = (self.x.wrapping_add(self.scroll_x as u16) / 8) as u16;
+            let row = (self.y.wrapping_add(self.scroll_y as u16) / 8) as u16;
             let addr = ((row * 32) + col) as u16 + offset;
 
             let tile_val = self.peek_vram(addr);
@@ -95,14 +101,14 @@ impl PPU {
                 half,
                 tcol as i32,
                 trow as i32,
-                (self.x % 8) as i32,
-                (self.y % 8) as i32,
+                (self.x.wrapping_add(self.scroll_x as u16) % 8) as i32,
+                (self.y.wrapping_add(self.scroll_y as u16) % 8) as i32,
             );
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let palette_segment = self.get_background_palette_segment(
                 nametable as usize,
-                self.x as usize,
-                self.y as usize,
+                self.x.wrapping_add(self.scroll_x as u16) as usize,
+                self.y.wrapping_add(self.scroll_y as u16) as usize,
             );
 
             let color = self.get_palette_color(&palette_segment, val as u16);
@@ -361,6 +367,7 @@ impl AddressSpace for PPU {
             0x2001 => self.PPUMASK,
             0x2002 => {
                 self.addr_latch = false;
+                self.scroll_latch = false;
                 self.PPUSTATUS
             }
             0x2003 => self.OAMADDR,
@@ -383,7 +390,14 @@ impl AddressSpace for PPU {
                 self.oam_mem[self.OAMADDR as usize] = byte;
                 self.OAMADDR += 1;
             }
-            0x2005 => self.PPUSCROLL = byte,
+            0x2005 => {
+                if self.scroll_latch {
+                    self.scroll_y = byte;
+                } else {
+                    self.scroll_x = byte;
+                    self.scroll_latch = true;
+                }
+            },
             0x2006 => {
                 //PPUADDR
                 self.ppuaddr_address = match self.addr_latch {
