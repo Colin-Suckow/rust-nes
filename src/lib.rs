@@ -1,5 +1,3 @@
-#![feature(const_if_match)]
-
 mod cartridge;
 mod controller;
 mod cpu;
