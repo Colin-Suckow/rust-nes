@@ -5,3 +5,7 @@ mem.txt
 mytest.log
 .idea
 Cargo.lock
+/desktop/target/
+/desktop/Cargo.lock
+/desktop/mem.txt
+/desktop/mytest.log
