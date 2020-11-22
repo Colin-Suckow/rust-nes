@@ -112,8 +112,8 @@ impl PPU {
             );
 
             let color = self.get_palette_color(&palette_segment, val as u16);
-            let mx = self.x.clone() as usize;
-            let my = self.y.clone() as usize;
+            let mx = self.x as usize;
+            let my = self.y as usize;
             self.set_pixel(mx, my, color);
         }
     }
@@ -201,10 +201,10 @@ impl PPU {
                 };
                 self.draw_tile(
                     half,
-                    sprite[3].clone() as i32,
-                    sprite[0].clone() as i32,
-                    tcol.clone() as i32,
-                    trow.clone() as i32,
+                    sprite[3] as i32,
+                    sprite[0] as i32,
+                    tcol as i32,
+                    trow as i32,
                     sprite[2].get_bit(6),
                     sprite[2].get_bit(7),
                     &segment,
@@ -308,7 +308,7 @@ impl PPU {
                     mc = 7 - c;
                 }
                 let val =
-                    self.get_background_pixel_value(half.clone(), tile_column, tile_row, mc, mr);
+                    self.get_background_pixel_value(half, tile_column, tile_row, mc, mr);
                 if val == 0 {
                     continue;
                 }
@@ -462,11 +462,11 @@ fn map_tile_address(
         TableHalf::Right => 1,
     } << 12;
 
-    address = address | y_offset as u16; //y offset
-    address = address | bit_plane_mask; //Upper or lower bit plane
-    address = address | (tile_column as u16) << 4; //Tile column
-    address = address | (tile_row as u16) << 8;
-    address = address | table_half_mask;
+    address |= y_offset as u16; //y offset
+    address |= bit_plane_mask; //Upper or lower bit plane
+    address |= (tile_column as u16) << 4; //Tile column
+    address |= (tile_row as u16) << 8;
+    address |= table_half_mask;
     address
 }
 

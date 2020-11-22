@@ -39,7 +39,7 @@ impl Cartridge {
         // }
 
         Cartridge {
-            trainer_present: trainer_present,
+            trainer_present,
             prg_rom_data: Some(data[prg_start..prg_end].to_vec()),
             chr_rom_data: Some(data[chr_start..chr_end].to_vec()),
             mirror_mode: char_mirror,
@@ -56,7 +56,7 @@ impl Cartridge {
     pub fn take_character_data(&mut self) -> CharacterData {
         CharacterData {
             data: self.chr_rom_data.take().unwrap(),
-            mirror: self.mirror_mode.clone(),
+            mirror: self.mirror_mode,
         }
     }
 

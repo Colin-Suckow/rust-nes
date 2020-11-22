@@ -25,7 +25,7 @@ pub struct Cpu<T: AddressSpace> {
 impl<T: AddressSpace> Cpu<T> {
     pub fn new(bus: T) -> Cpu<T> {
         Cpu {
-            bus: bus,
+            bus,
             PC: 0,
             S: 0x0FD,
             P: 0x24,
@@ -141,9 +141,9 @@ impl<T: AddressSpace> Cpu<T> {
         let operand = self.fetch_operand(&operation);
 
         let _operand_value = match &operand {
-            Operand::Constant { value } => value.clone() as u16,
-            Operand::Address { location } => location.clone(),
-            Operand::Accumulator => self.A.clone() as u16,
+            Operand::Constant { value } => *value as u16,
+            Operand::Address { location } => *location,
+            Operand::Accumulator => self.A as u16,
             Operand::None => 0,
         };
 
@@ -341,8 +341,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn ADC(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
         let old_c = self.get_C() as u8;
@@ -357,11 +357,11 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn AND(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A = self.A & op;
+        self.A &= op;
         self.set_standard_flags(&self.A.clone());
         None
     }
@@ -369,12 +369,12 @@ impl<T: AddressSpace> Cpu<T> {
     fn ASL(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
-                let val = self.bus.peek(location.clone());
+                let val = self.bus.peek(*location);
                 let shifted_val = val << 1;
                 self.set_C(val.get_bit(7));
                 self.set_N(shifted_val.get_bit(7));
                 self.set_Z(shifted_val == 0);
-                self.bus.poke(location.clone(), shifted_val);
+                self.bus.poke(*location, shifted_val);
             }
             Operand::Accumulator => {
                 let val = self.A;
@@ -509,9 +509,9 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn CMP(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()),
-            Operand::Accumulator => self.A.clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
+            Operand::Accumulator => self.A,
             Operand::None => 0,
         };
         self.set_C(value <= self.A);
@@ -522,9 +522,9 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn CPX(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()),
-            Operand::Accumulator => self.A.clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
+            Operand::Accumulator => self.A,
             Operand::None => 0,
         };
         self.set_C(value <= self.X);
@@ -535,9 +535,9 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn CPY(&mut self, operand: &Operand) -> Option<u8> {
         let value = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()),
-            Operand::Accumulator => self.A.clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
+            Operand::Accumulator => self.A,
             Operand::None => 0,
         };
         self.set_C(value <= self.Y);
@@ -569,11 +569,11 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn EOR(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A = self.A ^ op;
+        self.A ^= op;
         self.set_standard_flags(&self.A.clone());
         None
     }
@@ -613,8 +613,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn LDA(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.A = value.clone(),
-            Operand::Address { location } => self.A = self.bus.peek(location.clone()),
+            Operand::Constant { value } => self.A = *value,
+            Operand::Address { location } => self.A = self.bus.peek(*location),
             _ => (),
         };
         self.set_N(self.A.get_bit(7));
@@ -624,8 +624,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn LDX(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.X = value.clone(),
-            Operand::Address { location } => self.X = self.bus.peek(location.clone()),
+            Operand::Constant { value } => self.X = *value,
+            Operand::Address { location } => self.X = self.bus.peek(*location),
             Operand::Accumulator => self.X = self.A,
             Operand::None => (),
         }
@@ -638,8 +638,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn LDY(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Constant { value } => self.Y = value.clone(),
-            Operand::Address { location } => self.Y = self.bus.peek(location.clone()),
+            Operand::Constant { value } => self.Y = *value,
+            Operand::Address { location } => self.Y = self.bus.peek(*location),
             Operand::Accumulator => self.Y = self.A,
             Operand::None => (),
         }
@@ -653,12 +653,12 @@ impl<T: AddressSpace> Cpu<T> {
     fn LSR(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
-                let val = self.bus.peek(location.clone());
+                let val = self.bus.peek(*location);
                 let shifted_val = val >> 1;
                 self.set_C(val.get_bit(0));
                 self.set_N(false);
                 self.set_Z(shifted_val == 0);
-                self.bus.poke(location.clone(), shifted_val);
+                self.bus.poke(*location, shifted_val);
             }
             Operand::Accumulator => {
                 let val = self.A;
@@ -681,11 +681,11 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn ORA(&mut self, operand: &Operand) -> Option<u8> {
         let op = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()).clone(),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
-        self.A = self.A | op;
+        self.A |= op;
         self.set_standard_flags(&self.A.clone());
         None
     }
@@ -716,13 +716,13 @@ impl<T: AddressSpace> Cpu<T> {
     fn ROL(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
-                let val = self.bus.peek(location.clone());
+                let val = self.bus.peek(*location);
                 let mut rotated_val = val << 1;
                 rotated_val.set_bit(0, self.get_C());
                 self.set_C(val.get_bit(7));
                 self.set_N(rotated_val.get_bit(7));
                 self.set_Z(rotated_val == 0);
-                self.bus.poke(location.clone(), rotated_val);
+                self.bus.poke(*location, rotated_val);
             }
             Operand::Accumulator => {
                 let val = self.A;
@@ -741,13 +741,13 @@ impl<T: AddressSpace> Cpu<T> {
     fn ROR(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
             Operand::Address { location } => {
-                let val = self.bus.peek(location.clone());
+                let val = self.bus.peek(*location);
                 let mut rotated_val = val >> 1;
                 rotated_val.set_bit(7, self.get_C());
                 self.set_C(val.get_bit(0));
                 self.set_N(rotated_val.get_bit(7));
                 self.set_Z(rotated_val == 0);
-                self.bus.poke(location.clone(), rotated_val);
+                self.bus.poke(*location, rotated_val);
             }
             Operand::Accumulator => {
                 let val = self.A;
@@ -780,8 +780,8 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn SBC(&mut self, operand: &Operand) -> Option<u8> {
         let val = match operand {
-            Operand::Constant { value } => value.clone(),
-            Operand::Address { location } => self.bus.peek(location.clone()),
+            Operand::Constant { value } => *value,
+            Operand::Address { location } => self.bus.peek(*location),
             _ => 0,
         };
         let carry = !self.get_C() as u8;
@@ -811,7 +811,7 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn STA(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(location.clone(), self.A),
+            Operand::Address { location } => self.bus.poke(*location, self.A),
             _ => {}
         }
         None
@@ -819,7 +819,7 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn STX(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(location.clone(), self.X),
+            Operand::Address { location } => self.bus.poke(*location, self.X),
             _ => {}
         }
         None
@@ -827,7 +827,7 @@ impl<T: AddressSpace> Cpu<T> {
 
     fn STY(&mut self, operand: &Operand) -> Option<u8> {
         match operand {
-            Operand::Address { location } => self.bus.poke(location.clone(), self.Y),
+            Operand::Address { location } => self.bus.poke(*location, self.Y),
             _ => {}
         }
         None
@@ -875,7 +875,7 @@ impl<T: AddressSpace> Cpu<T> {
 
 fn unpack_address(operand: &Operand) -> u16 {
     match operand {
-        Operand::Address { location } => location.clone(),
+        Operand::Address { location } => *location,
         _ => panic!(),
     }
 }

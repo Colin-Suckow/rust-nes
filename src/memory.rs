@@ -72,14 +72,14 @@ impl Bus {
 
 impl AddressSpace for Bus {
     fn peek(&mut self, ptr: u16) -> u8 {
-        return match ptr {
+        match ptr {
             0x4016 => self.controller.peek(ptr), //Controller port 1
             0x4017 => 0,                         //Empty controller 2 hack
             0x0000..=0x07FF => self.ram.peek(ptr),
             0x2000..=0x2007 => self.ppu.peek(ptr),
             0x4020..=0xFFFF => self.cartridge.peek(ptr),
             _ => 0,
-        };
+        }
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
@@ -106,7 +106,7 @@ impl AddressSpace for TestBus {
     }
 
     fn poke(&mut self, _ptr: u16, _byte: u8) {
-        ()
+        
     }
 }
 

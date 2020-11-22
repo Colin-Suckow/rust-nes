@@ -30,8 +30,8 @@ impl Emulator {
         let mut bus = memory::Bus {
             ram: memory::Ram::new(),
             cartridge: rom.take_program_data(),
-            ppu: ppu,
-            controller: controller,
+            ppu,
+            controller,
         };
 
         bus.write_mem();
@@ -41,7 +41,7 @@ impl Emulator {
         cpu.reset();
 
         Self {
-            cpu: cpu,
+            cpu,
             framebuffer: vec![0; 256 * 240]
         }
     }
