@@ -20,14 +20,14 @@ impl Cartridge {
         let header = &data[..16];
 
         let valid_ines = header[..4] == [0x4E, 0x45, 0x53, 0x1A];
-        if (!valid_ines) {
+        if !valid_ines {
             panic!("File is not a valid nes rom!");
         }
         // false = horizontal, true = vertical mirror
         let char_mirror = mapMirrorMode(header[6] & 0b00000001).expect("Unsupported mirror mode!");
         let trainer_present = (header[6] & 0b00000100) >> 2 == 1;
         let mapper = (header[7] & 0b11110000) + ((header[6] & 0b11110000) >> 4);
-        let mut char_mirror_text = String::new();
+        let _char_mirror_text = String::new();
 
         let prg_start = 16 as usize;
         let prg_end = prg_start + (header[4] as usize * 16384);
@@ -137,7 +137,7 @@ pub fn print_ines_header(path: &str) {
 }
 
 fn mapMirrorMode(mode_num: u8) -> Option<MirrorMode> {
-    let mode = match mode_num {
+    let _mode = match mode_num {
         0 => return Some(MirrorMode::Horizontal),
         1 => return Some(MirrorMode::Vertical),
         _ => return None,

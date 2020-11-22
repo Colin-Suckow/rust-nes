@@ -105,7 +105,7 @@ impl AddressSpace for TestBus {
         (ptr % 255) as u8
     }
 
-    fn poke(&mut self, ptr: u16, byte: u8) {
+    fn poke(&mut self, _ptr: u16, _byte: u8) {
         ()
     }
 }

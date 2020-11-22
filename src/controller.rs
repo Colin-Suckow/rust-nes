@@ -99,7 +99,7 @@ impl AddressSpace for Controller {
         }
     }
 
-    fn poke(&mut self, ptr: u16, byte: u8) {
+    fn poke(&mut self, _ptr: u16, byte: u8) {
         if byte > 0 {
             self.strobe = true;
             self.polls = 0;

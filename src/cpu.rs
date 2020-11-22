@@ -131,7 +131,7 @@ impl<T: AddressSpace> Cpu<T> {
             return;
         }
 
-        let inst_PC = self.PC;
+        let _inst_PC = self.PC;
 
         let operation = self.consume_next_operation();
 
@@ -140,7 +140,7 @@ impl<T: AddressSpace> Cpu<T> {
 
         let operand = self.fetch_operand(&operation);
 
-        let operand_value = match &operand {
+        let _operand_value = match &operand {
             Operand::Constant { value } => value.clone() as u16,
             Operand::Address { location } => location.clone(),
             Operand::Accumulator => self.A.clone() as u16,
@@ -330,7 +330,7 @@ impl<T: AddressSpace> Cpu<T> {
             AddressingMode::Accumulator => 0,
             _ => 1,
         };
-        for i in (0..extra_bytes) {
+        for i in 0..extra_bytes {
             operation.data.push(self.bus.peek(self.PC + i));
         }
         self.PC += extra_bytes;
@@ -461,7 +461,7 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn BRK(&mut self, operand: &Operand) -> Option<u8> {
+    fn BRK(&mut self, _operand: &Operand) -> Option<u8> {
         self.PC += 1;
         self.set_I(true);
         self.set_B(true);
@@ -487,22 +487,22 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn CLC(&mut self, operand: &Operand) -> Option<u8> {
+    fn CLC(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_C(false);
         None
     }
 
-    fn CLD(&mut self, operand: &Operand) -> Option<u8> {
+    fn CLD(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_D(false);
         None
     }
 
-    fn CLI(&mut self, operand: &Operand) -> Option<u8> {
+    fn CLI(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_I(false);
         None
     }
 
-    fn CLV(&mut self, operand: &Operand) -> Option<u8> {
+    fn CLV(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_V(false);
         None
     }
@@ -555,13 +555,13 @@ impl<T: AddressSpace> Cpu<T> {
         Some(2)
     }
 
-    fn DEX(&mut self, operand: &Operand) -> Option<u8> {
+    fn DEX(&mut self, _operand: &Operand) -> Option<u8> {
         self.X = self.X.wrapping_sub(1);
         self.set_standard_flags(&self.X.clone());
         None
     }
 
-    fn DEY(&mut self, operand: &Operand) -> Option<u8> {
+    fn DEY(&mut self, _operand: &Operand) -> Option<u8> {
         self.Y = self.Y.wrapping_sub(1);
         self.set_standard_flags(&self.Y.clone());
         None
@@ -587,13 +587,13 @@ impl<T: AddressSpace> Cpu<T> {
         Some(2)
     }
 
-    fn INX(&mut self, operand: &Operand) -> Option<u8> {
+    fn INX(&mut self, _operand: &Operand) -> Option<u8> {
         self.X = self.X.wrapping_add(1);
         self.set_standard_flags(&self.X.clone());
         None
     }
 
-    fn INY(&mut self, operand: &Operand) -> Option<u8> {
+    fn INY(&mut self, _operand: &Operand) -> Option<u8> {
         self.Y = self.Y.wrapping_add(1);
         self.set_standard_flags(&self.Y.clone());
         None
@@ -675,7 +675,7 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn NOP(&mut self, operand: &Operand) -> Option<u8> {
+    fn NOP(&mut self, _operand: &Operand) -> Option<u8> {
         None
     }
 
@@ -690,23 +690,23 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn PHA(&mut self, operand: &Operand) -> Option<u8> {
+    fn PHA(&mut self, _operand: &Operand) -> Option<u8> {
         self.push(self.A);
         Some(1)
     }
 
-    fn PHP(&mut self, operand: &Operand) -> Option<u8> {
+    fn PHP(&mut self, _operand: &Operand) -> Option<u8> {
         self.push(self.P | 0x10);
         Some(1)
     }
 
-    fn PLA(&mut self, operand: &Operand) -> Option<u8> {
+    fn PLA(&mut self, _operand: &Operand) -> Option<u8> {
         self.A = self.pop();
         self.set_standard_flags(&self.A.clone());
         Some(2)
     }
 
-    fn PLP(&mut self, operand: &Operand) -> Option<u8> {
+    fn PLP(&mut self, _operand: &Operand) -> Option<u8> {
         self.P = self.pop();
         self.P.set_bit(4, false);
         self.P.set_bit(5, true);
@@ -765,7 +765,7 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn RTI(&mut self, operand: &Operand) -> Option<u8> {
+    fn RTI(&mut self, _operand: &Operand) -> Option<u8> {
         self.P = self.pop();
         self.PC = self.pop_16();
         self.P.set_bit(4, false);
@@ -773,7 +773,7 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn RTS(&mut self, operand: &Operand) -> Option<u8> {
+    fn RTS(&mut self, _operand: &Operand) -> Option<u8> {
         self.PC = self.pop_16().wrapping_add(1);
         None
     }
@@ -794,17 +794,17 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn SEC(&mut self, operand: &Operand) -> Option<u8> {
+    fn SEC(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_C(true);
         None
     }
 
-    fn SED(&mut self, operand: &Operand) -> Option<u8> {
+    fn SED(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_D(true);
         None
     }
 
-    fn SEI(&mut self, operand: &Operand) -> Option<u8> {
+    fn SEI(&mut self, _operand: &Operand) -> Option<u8> {
         self.set_I(true);
         None
     }
@@ -833,36 +833,36 @@ impl<T: AddressSpace> Cpu<T> {
         None
     }
 
-    fn TAX(&mut self, operand: &Operand) -> Option<u8> {
+    fn TAX(&mut self, _operand: &Operand) -> Option<u8> {
         self.X = self.A;
         self.set_standard_flags(&self.X.clone());
         None
     }
 
-    fn TAY(&mut self, operand: &Operand) -> Option<u8> {
+    fn TAY(&mut self, _operand: &Operand) -> Option<u8> {
         self.Y = self.A;
         self.set_standard_flags(&self.Y.clone());
         None
     }
 
-    fn TSX(&mut self, operand: &Operand) -> Option<u8> {
+    fn TSX(&mut self, _operand: &Operand) -> Option<u8> {
         self.X = self.S;
         self.set_standard_flags(&self.X.clone());
         None
     }
 
-    fn TXA(&mut self, operand: &Operand) -> Option<u8> {
+    fn TXA(&mut self, _operand: &Operand) -> Option<u8> {
         self.A = self.X;
         self.set_standard_flags(&self.A.clone());
         None
     }
 
-    fn TXS(&mut self, operand: &Operand) -> Option<u8> {
+    fn TXS(&mut self, _operand: &Operand) -> Option<u8> {
         self.S = self.X;
         None
     }
 
-    fn TYA(&mut self, operand: &Operand) -> Option<u8> {
+    fn TYA(&mut self, _operand: &Operand) -> Option<u8> {
         self.A = self.Y;
         self.set_standard_flags(&self.A.clone());
         None
