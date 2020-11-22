@@ -1,7 +1,6 @@
 use crate::instruction::{AddressingMode, Instruction, Operation, OPCODES};
 use crate::memory::*;
 use bit_field::BitField;
-use std::io::Write;
 
 pub enum Operand {
     Constant { value: u8 },
@@ -20,8 +19,7 @@ pub struct Cpu<T: AddressSpace> {
     A: u8,   //Accumulator
     X: u8,   //Index X
     Y: u8,   //Index Y
-    operation_progress: u8,
-    log: std::fs::File,
+    operation_progress: u8
 }
 
 impl<T: AddressSpace> Cpu<T> {
@@ -34,8 +32,7 @@ impl<T: AddressSpace> Cpu<T> {
             A: 0,
             X: 0,
             Y: 0,
-            operation_progress: 0,
-            log: std::fs::File::create("mytest.log").unwrap(),
+            operation_progress: 0
         }
     }
 
@@ -881,10 +878,4 @@ fn unpack_address(operand: &Operand) -> u16 {
         Operand::Address { location } => location.clone(),
         _ => panic!(),
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::memory::{Bus, Ram};
 }

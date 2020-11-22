@@ -27,8 +27,9 @@ fn main() {
     };
 
     println!("Recived argument {}", rom_path);
+    let data = std::fs::read(rom_path).expect("Failed to read file");
 
-    let mut emu = Emulator::new(rom_path);
+    let mut emu = Emulator::new(data);
 
     let mut window =
         Window::new("NES Emulator", 256 * 3, 240 * 3, WindowOptions::default()).unwrap();

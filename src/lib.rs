@@ -16,17 +16,16 @@ pub mod prelude {
 }
 pub struct Emulator {
     cpu: Cpu<memory::Bus>,
-    framebuffer: Vec<u32>,
-    latest_controller_state: ControllerState,
+    framebuffer: Vec<u32>
 }
 
 impl Emulator {
-    pub fn new(rom_path: &str) -> Self {
-        let mut rom = cartridge::Cartridge::load(rom_path);
+    pub fn new(rom_data: Vec<u8>) -> Self {
+        let mut rom = cartridge::Cartridge::load(rom_data);
 
         //rom.printStats();
 
-        let mut ppu = crate::ppu::PPU::new(rom.take_character_data());
+        let ppu = crate::ppu::PPU::new(rom.take_character_data());
 
         let controller = controller::Controller::new();
 
@@ -45,8 +44,7 @@ impl Emulator {
 
         Self {
             cpu: cpu,
-            framebuffer: vec![0; 256 * 240],
-            latest_controller_state: ControllerState::new_empty(),
+            framebuffer: vec![0; 256 * 240]
         }
     }
 
