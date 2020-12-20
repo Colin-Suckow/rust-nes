@@ -53,8 +53,8 @@ fn main() {
             keys.contains(&Key::S),
             keys.contains(&Key::A),
             keys.contains(&Key::D),
-            keys.contains(&Key::Semicolon),
             keys.contains(&Key::Apostrophe),
+            keys.contains(&Key::Semicolon),
             keys.contains(&Key::Enter),
             keys.contains(&Key::RightShift),
         ));

@@ -85,6 +85,11 @@ impl PPU {
                 _ => 0,
             };
 
+            if self.check_sprite_hit() {
+                self.ppustatus.set_bit(6, true);
+            }
+
+            //Draw background
             let col = (self.x.wrapping_add(self.scroll_x as u16) / 8) as u16;
             let row = (self.y.wrapping_add(self.scroll_y as u16) / 8) as u16;
             let addr = ((row * 32) + col) as u16 + offset;
@@ -108,9 +113,7 @@ impl PPU {
             );
 
             let color = self.get_palette_color(&palette_segment, val as u16);
-            let mx = self.x as usize;
-            let my = self.y as usize;
-            self.set_pixel(mx, my, color);
+            self.set_pixel(self.x as usize, self.y as usize, color);
         }
     }
 
@@ -177,9 +180,11 @@ impl PPU {
     }
 
     pub fn show_frame(&mut self) -> bool {
-        if self.y == 0 && self.nmi_fired {
-            self.nmi_fired = false;
+        if self.y == 0 && self.x == 0 {
+            self.nmi_fired = false; //Clear vblank interrupt
+            self.ppustatus.set_bit(6, false); //Clear sprite 0 hit
 
+            //Draw sprites to screen
             let half = match self.ppuctrl.get_bit(3) {
                 true => TableHalf::Right,
                 false => TableHalf::Left,
@@ -315,6 +320,24 @@ impl PPU {
         }
     }
 
+    fn check_sprite_hit(&mut self) -> bool {
+        let moam = self.oam_mem.clone();
+        let sprite = moam.chunks(4).nth(0).unwrap().clone();
+        let tcol = sprite[1] & 0xF;
+        let trow = sprite[1] >> 4;
+        let half = match self.ppuctrl.get_bit(3) {
+            true => TableHalf::Right,
+            false => TableHalf::Left,
+        };
+
+        let mx = self.x.clone() as u8;
+        let my = self.y.clone() as u8;
+
+        let opaque = self.get_background_pixel_value(half, tcol.into(), trow.into(), (mx % 8).into(), (my % 8).into()) != 0;
+
+        (self.y as u8 >= sprite[0] && (self.y as u8) < sprite[0] + 8) && (self.x as u8 >= sprite[3] && (self.x as u8) < sprite[3] + 8) && opaque
+    }
+
     fn get_background_pixel_value(
         &mut self,
         table_half: TableHalf,
@@ -368,7 +391,7 @@ impl AddressSpace for PPU {
             0x2004 => self.oam_mem[self.oamaddr as usize],
             0x2005 => self.ppuscroll,
             0x2006 => self.ppuaddr,
-            0x2007 => self.ppudata,
+            0x2007 => self.peek_vram(self.ppuaddr_address),
             _ => 0,
         }
     }
