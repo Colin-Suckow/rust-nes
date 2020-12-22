@@ -89,6 +89,8 @@ impl PPU {
                 self.ppustatus.set_bit(6, true);
             }
 
+        
+
             //Draw background
             let col = (self.x.wrapping_add(self.scroll_x as u16) / 8) as u16;
             let row = (self.y.wrapping_add(self.scroll_y as u16) / 8) as u16;
@@ -224,7 +226,16 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
+
+                //Palette mirroring
+                0x3F10 => self.palette_ram[0x0] = byte,
+                0x3F14 => self.palette_ram[0x4] = byte,
+                0x3F18 => self.palette_ram[0x8] = byte,
+                0x3F1C => self.palette_ram[0xC] = byte,
                 0x3F00..=0x3F1F => self.palette_ram[(ptr - 0x3F00) as usize] = byte,
+
+                0x3F20..=0x3FFF => self.vram[(ptr - 0x0020) as usize] = byte,
                 _ => (),
             },
             MirrorMode::Horizontal => match ptr {
@@ -232,7 +243,16 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
+
+                //Palette mirroring
+                0x3F10 => self.palette_ram[0x0] = byte,
+                0x3F14 => self.palette_ram[0x4] = byte,
+                0x3F18 => self.palette_ram[0x8] = byte,
+                0x3F1C => self.palette_ram[0xC] = byte,
                 0x3F00..=0x3F1F => self.palette_ram[(ptr - 0x3F00) as usize] = byte,
+
+                0x3F20..=0x3FFF => self.vram[(ptr - 0x0020) as usize] = byte,
                 _ => (),
             },
         }
@@ -245,7 +265,16 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize],
+                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
+
+                //Palette mirror
+                0x3F10 => self.palette_ram[0x0],
+                0x3F14 => self.palette_ram[0x4],
+                0x3F18 => self.palette_ram[0x8],
+                0x3F1C => self.palette_ram[0xC],
                 0x3F00..=0x3F1F => self.palette_ram[(ptr - 0x3F00) as usize],
+
+                0x3F20..=0x3FFF => self.vram[(ptr - 0x0020) as usize],
                 _ => 0,
             },
             MirrorMode::Horizontal => match ptr {
@@ -253,7 +282,16 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
+                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
+
+                //Palette mirror
+                0x3F10 => self.palette_ram[0x0],
+                0x3F14 => self.palette_ram[0x4],
+                0x3F18 => self.palette_ram[0x8],
+                0x3F1C => self.palette_ram[0xC],
                 0x3F00..=0x3F1F => self.palette_ram[(ptr - 0x3F00) as usize],
+
+                0x3F20..=0x3FFF => self.vram[(ptr - 0x0020) as usize],
                 _ => 0,
             },
         }
@@ -391,7 +429,10 @@ impl AddressSpace for PPU {
             0x2004 => self.oam_mem[self.oamaddr as usize],
             0x2005 => self.ppuscroll,
             0x2006 => self.ppuaddr,
-            0x2007 => self.peek_vram(self.ppuaddr_address),
+            0x2007 => {
+                self.ppuaddr_address += 1;
+                self.peek_vram(self.ppuaddr_address - 1)
+            },
             _ => 0,
         }
     }
