@@ -34,9 +34,14 @@ pub struct PPU {
     nmi_fired: bool,
     oam_mem: Vec<u8>,
     palette_ram: Vec<u8>,
-    scroll_x: u8,
-    scroll_y: u8,
     scroll_latch: bool,
+
+    v: u16,
+    t: u16,
+    x_fine: u8,
+
+    scroll_x: u16,
+    scroll_y: u16,
 }
 
 impl PPU {
@@ -59,11 +64,18 @@ impl PPU {
             nmi_fired: false,
             oam_mem: vec![0; 256],
             palette_ram: vec![0; 0x0020],
+            scroll_latch: false,
+
+            v: 0,
+            t: 0,
+            x_fine: 0,
+
             scroll_x: 0,
             scroll_y: 0,
-            scroll_latch: false,
         }
     }
+
+    
 
     pub fn step_cycle(&mut self) {
         self.update_position();
@@ -77,7 +89,7 @@ impl PPU {
             };
 
             let nametable = self.ppuctrl & 0x3;
-            let offset = match nametable {
+            let base_offset = match nametable {
                 0 => 0x2000,
                 1 => 0x2400,
                 2 => 0x2800,
@@ -89,11 +101,11 @@ impl PPU {
                 self.ppustatus.set_bit(6, true);
             }
 
-        
+            let offset = calculate_nametable_offset(self.x, self.y, self.scroll_x, self.scroll_y, base_offset);
 
-            //Draw background
-            let col = (self.x.wrapping_add(self.scroll_x as u16) / 8) as u16;
-            let row = (self.y.wrapping_add(self.scroll_y as u16) / 8) as u16;
+            let col = (((self.x + self.scroll_x) % 256) / 8) as u16;
+            let row = (((self.y + self.scroll_y) % 240) / 8) as u16;
+        
             let addr = ((row * 32) + col) as u16 + offset;
 
             let tile_val = self.peek_vram(addr);
@@ -104,29 +116,26 @@ impl PPU {
                 half,
                 tcol as i32,
                 trow as i32,
-                (self.x.wrapping_add(self.scroll_x as u16) % 8) as i32,
-                (self.y.wrapping_add(self.scroll_y as u16) % 8) as i32,
+                ((self.x + self.scroll_x) % 8) as i32,
+                ((self.y + self.scroll_y) % 8) as i32,
             );
             //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
             let palette_segment = self.get_background_palette_segment(
-                nametable as usize,
-                self.x.wrapping_add(self.scroll_x as u16) as usize,
-                self.y.wrapping_add(self.scroll_y as u16) as usize,
+                (offset + 0x03C0) as usize,
+                ((self.x + self.scroll_x) % 256) as usize,
+                ((self.y + self.scroll_y) % 240) as usize,
             );
 
             let color = self.get_palette_color(&palette_segment, val as u16);
-            self.set_pixel(self.x as usize, self.y as usize, color);
+            self.set_pixel(
+                self.x as usize,
+                self.y as usize,
+                color,
+            );
         }
     }
 
-    fn get_background_palette_segment(&self, nametable: usize, x: usize, y: usize) -> PaletteRam {
-        let offset = match nametable {
-            0 => 0x23C0,
-            1 => 0x27C0,
-            2 => 0x2BC0,
-            3 => 0x2FC0,
-            _ => 0,
-        };
+    fn get_background_palette_segment(&self, offset: usize, x: usize, y: usize) -> PaletteRam {
         let px = x / 32;
         let py = y / 32;
         let index = (py * 8) + px;
@@ -185,6 +194,7 @@ impl PPU {
         if self.y == 0 && self.x == 0 {
             self.nmi_fired = false; //Clear vblank interrupt
             self.ppustatus.set_bit(6, false); //Clear sprite 0 hit
+            self.v = self.t; //reset ppu register
 
             //Draw sprites to screen
             let half = match self.ppuctrl.get_bit(3) {
@@ -225,7 +235,7 @@ impl PPU {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
-                0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
                 0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
 
                 //Palette mirroring
@@ -241,7 +251,7 @@ impl PPU {
             MirrorMode::Horizontal => match ptr {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
                 0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
 
@@ -264,7 +274,7 @@ impl PPU {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
-                0x2C00..=0x2FFF => self.vram[(ptr - 0x2400) as usize],
+                0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
                 0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
 
                 //Palette mirror
@@ -280,7 +290,7 @@ impl PPU {
             MirrorMode::Horizontal => match ptr {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
-                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
                 0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
 
@@ -371,9 +381,17 @@ impl PPU {
         let mx = self.x.clone() as u8;
         let my = self.y.clone() as u8;
 
-        let opaque = self.get_background_pixel_value(half, tcol.into(), trow.into(), (mx % 8).into(), (my % 8).into()) != 0;
+        let opaque = self.get_background_pixel_value(
+            half,
+            tcol.into(),
+            trow.into(),
+            (mx % 8).into(),
+            (my % 8).into(),
+        ) != 0;
 
-        (self.y as u8 >= sprite[0] && (self.y as u8) < sprite[0] + 8) && (self.x as u8 >= sprite[3] && (self.x as u8) < sprite[3] + 8) && opaque
+        (self.y as u8 >= sprite[0] && (self.y as u8) < sprite[0] + 8)
+            && (self.x as u8 >= sprite[3] && (self.x as u8) < sprite[3] + 8)
+            && opaque
     }
 
     fn get_background_pixel_value(
@@ -407,6 +425,61 @@ impl PPU {
         //self.oam_mem.clear();
         self.oam_mem.copy_from_slice(data);
     }
+
+    pub fn render_nametable(&mut self) -> Vec<u32> {
+        let mut buffer = vec![0; 512 * 480];
+
+        let half = match self.ppuctrl.get_bit(3) {
+            true => TableHalf::Left,
+            false => TableHalf::Right,
+        };
+
+        //let nametable = self.ppuctrl & 0x3;
+
+        for index in 0..buffer.len() {
+            let mx = (self.x + self.scroll_x.saturating_sub(256)) % 512;
+            let my = (self.y + self.scroll_y.saturating_sub(256)) % 512;
+
+            // let (x, y) = match (mx > 256, my > 240) {
+            //     (false, false) => (lx, ly),
+            //     (false, true) => (lx, ly + 240),
+            //     (true, false) => (lx + 256, ly),
+            //     (true, true) => (lx + 256, ly + 240),
+            //     _ => (lx, ly),
+            // };
+
+            let offset = match (mx > 256, my > 240) {
+                (false, false) => 0x2000,
+                (true, false) => 0x2400,
+                (false, true) => 0x2800,
+                (true, true) => 0x2c00,
+            };
+
+            let addr = (((self.y / 8) * 32) + (self.x / 8)) as u16 + offset;
+
+            let tile_val = self.peek_vram(addr);
+            let tcol = tile_val & 0xF;
+            let trow = tile_val >> 4;
+
+            let val = self.get_background_pixel_value(
+                half,
+                tcol as i32,
+                trow as i32,
+                (self.x % 8) as i32,
+                (self.y % 8) as i32,
+            );
+            //let color = if val > 0 { 0xFFFFFFFF } else { 0 };
+            let palette_segment = self.get_background_palette_segment(
+                (offset + 0x3c0).into(),
+                self.x as usize,
+                self.y as usize,
+            );
+
+            let color = self.get_palette_color(&palette_segment, val as u16);
+            buffer[index] = color;
+        }
+        buffer
+    }
 }
 
 // fn apply_palette(value: u8) -> u32 {
@@ -432,14 +505,17 @@ impl AddressSpace for PPU {
             0x2007 => {
                 self.ppuaddr_address += 1;
                 self.peek_vram(self.ppuaddr_address - 1)
-            },
+            }
             _ => 0,
         }
     }
 
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
-            0x2000 => self.ppuctrl = byte,
+            0x2000 => {
+                self.ppuctrl = byte;
+                self.t = (self.t & !0xC00) | ((byte as u16 & 0x3) << 10);
+            }
             0x2001 => self.ppumask = byte,
             0x2002 => self.ppustatus = byte,
             0x2003 => self.oamaddr = byte,
@@ -450,10 +526,15 @@ impl AddressSpace for PPU {
             }
             0x2005 => {
                 if self.scroll_latch {
-                    self.scroll_y = byte;
+                    self.t = (self.t & !0x3E0) | (((byte >> 3) as u16) << 5); //y_coarse
+                    self.t = (self.t & !0x7000) | (((byte & 0x7) as u16) << 12);
+                    self.scroll_y = byte as u16;
+                //y_fine
                 } else {
-                    self.scroll_x = byte;
+                    self.t = (self.t & !0x1F) | ((byte >> 3) as u16); //x_coarse
+                    self.x_fine = byte & 0x7; //x_fine
                     self.scroll_latch = true;
+                    self.scroll_x = byte as u16;
                 }
             }
             0x2006 => {
@@ -528,6 +609,18 @@ fn map_tile_address(
     address
 }
 
+fn calculate_nametable_offset(x: u16, y: u16, scroll_x: u16, scroll_y: u16, base_offset: u16) -> u16 {
+    let sx = (x as u16 + scroll_x as u16) % 512;
+    let sy = (y as u16 + scroll_y as u16) % 480;
+
+    (match (sx >= 256, sy >= 240) {
+        (false, false) => 0x0,
+        (true, false) => 0x400,
+        (false, true) => 0x800,
+        (true, true) => 0xc00,
+    } + base_offset) as u16
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -536,5 +629,29 @@ mod tests {
     fn test_map_tile_address_lower() {
         let addr = map_tile_address(&TableHalf::Left, 4, 14, 3, BitPlane::Lower);
         assert_eq!(addr, 0b001110_01000011);
+    }
+
+    #[test]
+    fn scroll_nametable_0() {
+        let addr = calculate_nametable_offset(0, 0, 0, 0, 0x2000);
+        assert_eq!(addr, 0x2000);
+    }
+
+    #[test]
+    fn scroll_nametable_1() {
+        let addr = calculate_nametable_offset(0, 0, 256, 0, 0x2000);
+        assert_eq!(addr, 0x2400);
+    }
+
+    #[test]
+    fn scroll_nametable_2() {
+        let addr = calculate_nametable_offset(0, 0, 0, 240, 0x2000);
+        assert_eq!(addr, 0x2800);
+    }
+
+    #[test]
+    fn scroll_nametable_3() {
+        let addr = calculate_nametable_offset(0, 0, 256, 240, 0x2000);
+        assert_eq!(addr, 0x2C00);
     }
 }

@@ -10,3 +10,4 @@ edition = "2018"
 clap = "2.33.0"
 minifb = "0.19.1"
 nesemu = {path = ".."}
+image = "0.23.12"

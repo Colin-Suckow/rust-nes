@@ -7,6 +7,7 @@ mod ppu;
 
 use controller::ControllerState;
 use cpu::Cpu;
+use cartridge::{MirrorMode, Cartridge};
 
 pub mod prelude {
     pub use super::controller::ControllerState;
@@ -20,8 +21,7 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(rom_data: Vec<u8>) -> Self {
         let mut rom = cartridge::Cartridge::load(rom_data);
-
-        //rom.printStats();
+        println!("Mirror mode: {:?}", rom.mirror_mode);
 
         let ppu = crate::ppu::PPU::new(rom.take_character_data());
 
@@ -34,7 +34,6 @@ impl Emulator {
             controller,
         };
 
-        bus.write_mem();
 
         let mut cpu = Cpu::new(bus);
 
@@ -76,5 +75,9 @@ impl Emulator {
 
     pub fn buffer(&self) -> &Vec<u32> {
         &self.framebuffer
+    }
+
+    pub fn nametable_buffer(&mut self) -> Vec<u32> {
+        self.cpu.bus.ppu.render_nametable().clone()
     }
 }
