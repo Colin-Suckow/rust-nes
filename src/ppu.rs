@@ -36,12 +36,10 @@ pub struct PPU {
     palette_ram: Vec<u8>,
     scroll_latch: bool,
 
-    v: u16,
-    t: u16,
-    x_fine: u8,
-
     scroll_x: u16,
     scroll_y: u16,
+
+    tmp_nametable: u8,
 }
 
 impl PPU {
@@ -66,12 +64,9 @@ impl PPU {
             palette_ram: vec![0; 0x0020],
             scroll_latch: false,
 
-            v: 0,
-            t: 0,
-            x_fine: 0,
-
             scroll_x: 0,
             scroll_y: 0,
+            tmp_nametable: 0,
         }
     }
 
@@ -132,6 +127,11 @@ impl PPU {
                 self.y as usize,
                 color,
             );
+
+            //End of scanline
+            if self.x == 255 {
+                self.ppuctrl = (self.ppuctrl & !0x2) | self.tmp_nametable; //Update vertical value
+            }
         }
     }
 
@@ -194,7 +194,11 @@ impl PPU {
         if self.y == 0 && self.x == 0 {
             self.nmi_fired = false; //Clear vblank interrupt
             self.ppustatus.set_bit(6, false); //Clear sprite 0 hit
-            self.v = self.t; //reset ppu register
+            self.ppuctrl = (self.ppuctrl & !0x1) | self.tmp_nametable; //Update horizontal nametable value
+         
+            //self.ppuctrl &= !0x3;
+            //self.scroll_x = 0;
+            //self.scroll_y = 0;
 
             //Draw sprites to screen
             let half = match self.ppuctrl.get_bit(3) {
@@ -236,7 +240,7 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
-                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
+                0x3000..=0x3EFF => self.poke_vram(ptr - 0x1000, byte),
 
                 //Palette mirroring
                 0x3F10 => self.palette_ram[0x0] = byte,
@@ -250,10 +254,10 @@ impl PPU {
             },
             MirrorMode::Horizontal => match ptr {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize] = byte,
-                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize] = byte,
+                0x2400..=0x27FF => self.vram[(ptr - 0x2400) as usize] = byte,
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize] = byte,
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize] = byte,
-                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize] = byte,
+                0x3000..=0x3EFF => self.poke_vram(ptr - 0x1000, byte),
 
                 //Palette mirroring
                 0x3F10 => self.palette_ram[0x0] = byte,
@@ -275,7 +279,7 @@ impl PPU {
                 0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
                 0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
-                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
+                0x3000..=0x3EFF => self.peek_vram(ptr - 0x1000),
 
                 //Palette mirror
                 0x3F10 => self.palette_ram[0x0],
@@ -289,10 +293,10 @@ impl PPU {
             },
             MirrorMode::Horizontal => match ptr {
                 0x2000..=0x23FF => self.vram[(ptr - 0x2000) as usize],
-                0x2400..=0x27FF => self.vram[(ptr - 0x2000) as usize],
-                0x2800..=0x2BFF => self.vram[(ptr - 0x2800) as usize],
+                0x2400..=0x27FF => self.vram[(ptr - 0x2400) as usize],
+                0x2800..=0x2BFF => self.vram[(ptr - 0x2400) as usize],
                 0x2C00..=0x2FFF => self.vram[(ptr - 0x2800) as usize],
-                0x3000..=0x3EFF => self.vram[(ptr - 0x1000) as usize],
+                0x3000..=0x3EFF => self.peek_vram(ptr - 0x1000),
 
                 //Palette mirror
                 0x3F10 => self.palette_ram[0x0],
@@ -513,8 +517,10 @@ impl AddressSpace for PPU {
     fn poke(&mut self, ptr: u16, byte: u8) {
         match ptr {
             0x2000 => {
+                let old_nametable = self.ppuctrl & 0x3; //Save old nametable value
                 self.ppuctrl = byte;
-                self.t = (self.t & !0xC00) | ((byte as u16 & 0x3) << 10);
+                self.ppuctrl = (self.ppuctrl & !0x3) | old_nametable; //Re write old nametable data
+                self.tmp_nametable = byte & 0x3; //Save new nametable data to be written later
             }
             0x2001 => self.ppumask = byte,
             0x2002 => self.ppustatus = byte,
@@ -526,13 +532,8 @@ impl AddressSpace for PPU {
             }
             0x2005 => {
                 if self.scroll_latch {
-                    self.t = (self.t & !0x3E0) | (((byte >> 3) as u16) << 5); //y_coarse
-                    self.t = (self.t & !0x7000) | (((byte & 0x7) as u16) << 12);
                     self.scroll_y = byte as u16;
-                //y_fine
                 } else {
-                    self.t = (self.t & !0x1F) | ((byte >> 3) as u16); //x_coarse
-                    self.x_fine = byte & 0x7; //x_fine
                     self.scroll_latch = true;
                     self.scroll_x = byte as u16;
                 }
@@ -542,9 +543,14 @@ impl AddressSpace for PPU {
                 self.ppuaddr_address = match self.addr_latch {
                     false => {
                         self.addr_latch = true;
+                        self.tmp_nametable = (byte >> 2) & 0x3; //set nametable tmp
                         byte as u16
                     }
-                    true => self.ppuaddr_address << 8 | (byte as u16),
+                    true => {
+                        self.addr_latch = false;
+                        self.ppuctrl = (self.ppuctrl & !0x3) | self.tmp_nametable;
+                        self.ppuaddr_address << 8 | (byte as u16)
+                    }
                 };
                 //println!("{:#X} {:#X}", byte, self.ppuaddr_address);
             }
@@ -610,8 +616,8 @@ fn map_tile_address(
 }
 
 fn calculate_nametable_offset(x: u16, y: u16, scroll_x: u16, scroll_y: u16, base_offset: u16) -> u16 {
-    let sx = (x as u16 + scroll_x as u16) % 512;
-    let sy = (y as u16 + scroll_y as u16) % 480;
+    let sx = (x as u16 + scroll_x as u16);// % 512;
+    let sy = (y as u16 + scroll_y as u16);// % 480;
 
     (match (sx >= 256, sy >= 240) {
         (false, false) => 0x0,
