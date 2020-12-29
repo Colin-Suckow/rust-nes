@@ -28,7 +28,6 @@ pub struct PPU {
     oamaddr: u8,
     ppuscroll: u8,
     ppuaddr: u8,
-    ppudata: u8,
     addr_latch: bool,
     ppuaddr_address: u16,
     nmi_fired: bool,
@@ -56,7 +55,6 @@ impl PPU {
             oamaddr: 0,
             ppuscroll: 0,
             ppuaddr: 0,
-            ppudata: 0,
             addr_latch: false,
             ppuaddr_address: 0,
             nmi_fired: false,
@@ -616,8 +614,8 @@ fn map_tile_address(
 }
 
 fn calculate_nametable_offset(x: u16, y: u16, scroll_x: u16, scroll_y: u16, base_offset: u16) -> u16 {
-    let sx = (x as u16 + scroll_x as u16);// % 512;
-    let sy = (y as u16 + scroll_y as u16);// % 480;
+    let sx = x as u16 + scroll_x as u16;
+    let sy = y as u16 + scroll_y as u16;
 
     (match (sx >= 256, sy >= 240) {
         (false, false) => 0x0,

@@ -57,7 +57,7 @@ impl Bus {
             }
         }
     }
-
+    #[allow(dead_code)]
     pub fn write_mem(&mut self) {
         let mut file = std::fs::File::create("mem.txt").unwrap();
         for address in 0..0x10000 {

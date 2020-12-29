@@ -7,7 +7,7 @@ mod ppu;
 
 use controller::ControllerState;
 use cpu::Cpu;
-use cartridge::{MirrorMode, Cartridge};
+
 
 pub mod prelude {
     pub use super::controller::ControllerState;
@@ -27,7 +27,7 @@ impl Emulator {
 
         let controller = controller::Controller::new();
 
-        let mut bus = memory::Bus {
+        let bus = memory::Bus {
             ram: memory::Ram::new(),
             cartridge: rom.take_program_data(),
             ppu,
